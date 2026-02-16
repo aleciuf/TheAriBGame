@@ -44,7 +44,7 @@ const npcs = [
   { id: "character_7", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
   { id: "character_8", x: 420, y: 920, size: 70, line: "............" },
   { id: "character_9", x: 980, y: 860, size: 74, line: "Sto cazzo de grafiko" },
-  { id: "character_10", x: 620, y: 560, size: 70, line: "Miao." }
+  { id: "character_10", x: 620, y: 560, size: 70, line: "Miao." },
   { id: "character_11", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
   { id: "character_12", x: 420, y: 920, size: 70, line: "............" },
   { id: "character_13", x: 980, y: 860, size: 74, line: "Sto cazzo de grafiko" },
