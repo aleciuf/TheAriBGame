@@ -49,6 +49,18 @@ body {
   box-shadow: none;
 }
 
+.scene {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 900px;
+  height: 520px;
+  transform-origin: 0 0;
+  background-size: 100% 100%;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+}
+
 .entity {
   position: absolute;
   display: grid;

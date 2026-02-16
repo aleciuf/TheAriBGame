@@ -1,4 +1,5 @@
 const worldEl = document.getElementById("world");
+const sceneEl = document.getElementById("scene");
 
 const WORLD_W = 900;
 const WORLD_H = 520;
@@ -13,19 +14,19 @@ const CHARACTER_PATH = "characters/";
 const DEFAULT_NPC_SIZE = 56;
 const NPC_SCALE = 1;
 
-const DEBUG_ENABLED = true;
+const CAMERA_ZOOM = 1.6;
+const DEBUG_ENABLED = false;
 
-worldEl.style.backgroundImage = `url("${BG_IMAGE}")`;
-worldEl.style.backgroundSize = "cover";
-worldEl.style.backgroundPosition = "center";
-worldEl.style.backgroundRepeat = "no-repeat";
+sceneEl.style.width = WORLD_W + "px";
+sceneEl.style.height = WORLD_H + "px";
+sceneEl.style.backgroundImage = `url("${BG_IMAGE}")`;
 
 const npcs = [
   { id: "character_1", x: 180, y: 140, size: 56, line: "A grafiko!!!" },
   { id: "character_2", x: 680, y: 120, size: 60, line: "Hai un goniometro?" },
   { id: "character_3", x: 270, y: 360, size: 52, line: "............" },
-  { id: "character_4", x: 700, y: 360, size: 64, line: "Miao." },
-  { id: "character_5", x: 460, y: 250, size: 56, line: "Sto cazzo de grafiko" }
+  { id: "character_4", x: 700, y: 360, size: 64, line: "Sto cazzo de grafiko" },
+  { id: "character_5", x: 460, y: 250, size: 56, line: "Miao." }
 ];
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -34,9 +35,8 @@ let joyVec = { x: 0, y: 0 };
 function clamp (v, min, max) { return Math.max(min, Math.min(max, v)); }
 function dist (ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
-function getScale () {
-  const r = worldEl.getBoundingClientRect();
-  return { sx: r.width / WORLD_W, sy: r.height / WORLD_H, rect: r };
+function viewport () {
+  return worldEl.getBoundingClientRect();
 }
 
 function createEntity ({ id, x, y, size }) {
@@ -50,17 +50,16 @@ function createEntity ({ id, x, y, size }) {
   img.draggable = false;
   el.appendChild(img);
 
-  worldEl.appendChild(el);
+  sceneEl.appendChild(el);
   setPos(el, x, y, size);
   return el;
 }
 
 function setPos (el, x, y, size) {
-  const { sx, sy } = getScale();
-  el.style.left = (x * sx) + "px";
-  el.style.top = (y * sy) + "px";
-  el.style.width = (size * sx) + "px";
-  el.style.height = (size * sy) + "px";
+  el.style.left = x + "px";
+  el.style.top = y + "px";
+  el.style.width = size + "px";
+  el.style.height = size + "px";
 }
 
 function ensureBubble (el, text) {
@@ -79,6 +78,8 @@ function removeBubble (el) {
   if (b) { b.remove(); }
 }
 
+/* NPC CREATION */
+
 const npcEls = new Map();
 
 for (const n of npcs) {
@@ -86,8 +87,12 @@ for (const n of npcs) {
   npcEls.set(n.id, createEntity({ ...n, size }));
 }
 
+/* PLAYER */
+
 const player = { x: 350, y: 230 };
 const playerEl = createEntity({ id: "player", x: player.x, y: player.y, size: FOX_SIZE });
+
+/* PROXIMITY */
 
 let activeId = null;
 
@@ -122,6 +127,8 @@ function setActive (id) {
   ensureBubble(el, n.line);
 }
 
+/* INPUT: keyboard */
+
 window.addEventListener("keydown", (e) => {
   if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
 }, { passive: false });
@@ -137,10 +144,12 @@ function stopKeys () {
   keys.ArrowRight = false;
 }
 
+/* INPUT: touch on world */
+
 function setKeysFromPoint (clientX, clientY) {
-  const { rect } = getScale();
-  const x = (clientX - rect.left) / rect.width * WORLD_W;
-  const y = (clientY - rect.top) / rect.height * WORLD_H;
+  const r = viewport();
+  const x = (clientX - r.left) / r.width * WORLD_W;
+  const y = (clientY - r.top) / r.height * WORLD_H;
 
   const dx = x - (player.x + FOX_SIZE / 2);
   const dy = y - (player.y + FOX_SIZE / 2);
@@ -176,6 +185,8 @@ worldEl.addEventListener("pointercancel", () => {
   worldPointerDown = false;
   stopKeys();
 }, { capture: true });
+
+/* INPUT: joystick */
 
 const joy = document.getElementById("joy");
 const joyKnob = document.getElementById("joyKnob");
@@ -257,6 +268,8 @@ function inputVector () {
   return { x: joyVec.x / (mag || 1), y: joyVec.y / (mag || 1), mag };
 }
 
+/* COLLISION */
+
 const collision = {
   ready: false,
   disabled: false,
@@ -302,6 +315,8 @@ function playerFoot (nx, ny) {
   return { x: nx + FOX_SIZE / 2, y: ny + FOX_SIZE * 0.85 };
 }
 
+/* DEBUG (D) */
+
 let debugVisible = false;
 let debugEl = null;
 
@@ -321,7 +336,7 @@ function toggleDebug () {
     debugEl.style.opacity = "0.35";
     debugEl.style.pointerEvents = "none";
     debugEl.style.imageRendering = "pixelated";
-    worldEl.appendChild(debugEl);
+    sceneEl.appendChild(debugEl);
   }
 
   debugEl.style.display = debugVisible ? "block" : "none";
@@ -333,13 +348,31 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+/* CAMERA */
+
+function applyCamera () {
+  const r = viewport();
+
+  const viewW = r.width;
+  const viewH = r.height;
+
+  const targetX = viewW / 2 - (player.x + FOX_SIZE / 2) * CAMERA_ZOOM;
+  const targetY = viewH / 2 - (player.y + FOX_SIZE / 2) * CAMERA_ZOOM;
+
+  const minX = viewW - WORLD_W * CAMERA_ZOOM;
+  const minY = viewH - WORLD_H * CAMERA_ZOOM;
+
+  const tx = clamp(targetX, minX, 0);
+  const ty = clamp(targetY, minY, 0);
+
+  sceneEl.style.transform = `translate(${tx}px, ${ty}px) scale(${CAMERA_ZOOM})`;
+}
+
 window.addEventListener("resize", () => {
-  for (const n of npcs) {
-    const size = (n.size ?? DEFAULT_NPC_SIZE) * NPC_SCALE;
-    setPos(npcEls.get(n.id), n.x, n.y, size);
-  }
-  setPos(playerEl, player.x, player.y, FOX_SIZE);
+  applyCamera();
 });
+
+/* GAME LOOP */
 
 let last = performance.now();
 
@@ -378,6 +411,9 @@ function loop (t) {
   const n = nearest();
   setActive(n.d <= PROXIMITY ? n.id : null);
 
+  applyCamera();
   requestAnimationFrame(loop);
 }
+
+applyCamera();
 requestAnimationFrame(loop);
