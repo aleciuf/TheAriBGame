@@ -6,7 +6,7 @@ const MAP_H = 2048;
 
 const PLAYER_SIZE = 64;
 const SPEED = 320;
-const PROXIMITY = 70;
+const PROXIMITY = 110;
 
 const CAMERA_ZOOM = 1.6;
 
@@ -31,6 +31,7 @@ bgImg.style.left = "0";
 bgImg.style.top = "0";
 bgImg.style.width = MAP_W + "px";
 bgImg.style.height = MAP_H + "px";
+bgImg.style.pointerEvents = "none";
 sceneEl.appendChild(bgImg);
 
 const npcs = [
@@ -44,10 +45,10 @@ const npcs = [
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 let joyVec = { x: 0, y: 0 };
 
-function clamp (v, min, max) { return Math.max(min, Math.min(max, v)); }
-function dist (ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
-function createEntity ({ id, x, y, size }) {
+function createEntity({ id, x, y, size }) {
   const el = document.createElement("div");
   el.className = "entity";
   el.dataset.id = id;
@@ -63,14 +64,14 @@ function createEntity ({ id, x, y, size }) {
   return el;
 }
 
-function setPos (el, x, y, size) {
+function setPos(el, x, y, size) {
   el.style.left = x + "px";
   el.style.top = y + "px";
   el.style.width = size + "px";
   el.style.height = size + "px";
 }
 
-function ensureBubble (el, text) {
+function ensureBubble(el, text) {
   let b = el.querySelector(".bubble");
 
   if (!b) {
@@ -122,7 +123,7 @@ function ensureBubble (el, text) {
   if (box) { box.textContent = text; }
 }
 
-function removeBubble (el) {
+function removeBubble(el) {
   const b = el.querySelector(".bubble");
   if (b) { b.remove(); }
 }
@@ -139,7 +140,7 @@ const playerEl = createEntity({ id: "player", x: player.x, y: player.y, size: PL
 
 let activeId = null;
 
-function nearest () {
+function nearest() {
   let bestId = null;
   let bestD = Infinity;
 
@@ -152,7 +153,7 @@ function nearest () {
   return { id: bestId, d: bestD };
 }
 
-function setActive (id) {
+function setActive(id) {
   if (activeId === id) { return; }
 
   if (activeId) {
@@ -184,14 +185,14 @@ window.addEventListener("keyup", (e) => {
   if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
 }, { passive: false });
 
-function stopKeys () {
+function stopKeys() {
   keys.ArrowUp = false;
   keys.ArrowDown = false;
   keys.ArrowLeft = false;
   keys.ArrowRight = false;
 }
 
-function getCameraTransform () {
+function getCameraTransform() {
   const rect = worldEl.getBoundingClientRect();
   const viewW = rect.width;
   const viewH = rect.height;
@@ -208,11 +209,12 @@ function getCameraTransform () {
   return { tx, ty, zoom: CAMERA_ZOOM };
 }
 
-function applyCamera () {
+function applyCamera() {
   const cam = getCameraTransform();
   sceneEl.style.transform = `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.zoom})`;
 }
 
+/* touch move: screen-relative (non si rompe ai bordi) */
 function setKeysFromPoint(clientX, clientY) {
   const rect = worldEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -260,13 +262,13 @@ const joyKnob = document.getElementById("joyKnob");
 if (joy && joyKnob) {
   let joyActive = false;
 
-  function setKnob (nx, ny, radius) {
+  function setKnob(nx, ny, radius) {
     const kx = nx * radius;
     const ky = ny * radius;
     joyKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
   }
 
-  function resetJoy () {
+  function resetJoy() {
     joyVec.x = 0;
     joyVec.y = 0;
     joyKnob.style.transform = "translate(-50%, -50%)";
@@ -314,7 +316,7 @@ if (joy && joyKnob) {
   });
 }
 
-function inputVector () {
+function inputVector() {
   let x = 0;
   let y = 0;
 
@@ -334,55 +336,10 @@ function inputVector () {
   return { x: joyVec.x / (mag || 1), y: joyVec.y / (mag || 1), mag };
 }
 
-const collision = {
-  ready: false,
-  disabled: false,
-  canvas: document.createElement("canvas"),
-  ctx: null
-};
-
-collision.canvas.width = MAP_W;
-collision.canvas.height = MAP_H;
-collision.ctx = collision.canvas.getContext("2d", { willReadFrequently: true });
-
-(function loadCollisionMask () {
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.onload = () => {
-    collision.ctx.clearRect(0, 0, MAP_W, MAP_H);
-    collision.ctx.drawImage(img, 0, 0);
-    collision.ready = true;
-  };
-  img.onerror = () => {
-    collision.disabled = true;
-  };
-  img.src = COLLISION_IMAGE;
-})();
-
-function isWalkableAt (x, y) {
-  if (collision.disabled) { return true; }
-  if (!collision.ready) { return true; }
-
-  const px = clamp(Math.round(x), 0, MAP_W - 1);
-  const py = clamp(Math.round(y), 0, MAP_H - 1);
-
-  try {
-    const data = collision.ctx.getImageData(px, py, 1, 1).data;
-    return (data[0] + data[1] + data[2]) >= 600;
-  } catch (err) {
-    collision.disabled = true;
-    return true;
-  }
-}
-
-function playerFoot (nx, ny) {
-  return { x: nx + PLAYER_SIZE / 2, y: ny + PLAYER_SIZE * 0.85 };
-}
-
 let debugVisible = false;
 let debugEl = null;
 
-function toggleDebug () {
+function toggleDebug() {
   if (!DEBUG_ENABLED) { return; }
 
   debugVisible = !debugVisible;
@@ -411,12 +368,16 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("resize", () => {
+  sceneEl.style.width = MAP_W + "px";
+  sceneEl.style.height = MAP_H + "px";
+  bgImg.style.width = MAP_W + "px";
+  bgImg.style.height = MAP_H + "px";
   applyCamera();
 });
 
 let last = performance.now();
 
-function loop (t) {
+function loop(t) {
   const dt = Math.min(0.05, (t - last) / 1000);
   last = t;
 
@@ -426,25 +387,8 @@ function loop (t) {
   const stepX = v.x * speed * dt;
   const stepY = v.y * speed * dt;
 
-  let nx = clamp(player.x + stepX, 0, MAP_W - PLAYER_SIZE);
-  let ny = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
-
-  const foot = playerFoot(nx, ny);
-
-  if (isWalkableAt(foot.x, foot.y)) {
-    player.x = nx;
-    player.y = ny;
-  } else {
-    nx = clamp(player.x + stepX, 0, MAP_W - PLAYER_SIZE);
-    ny = player.y;
-    let f = playerFoot(nx, ny);
-    if (isWalkableAt(f.x, f.y)) { player.x = nx; }
-
-    nx = player.x;
-    ny = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
-    f = playerFoot(nx, ny);
-    if (isWalkableAt(f.x, f.y)) { player.y = ny; }
-  }
+  player.x = clamp(player.x + stepX, 0, MAP_W - PLAYER_SIZE);
+  player.y = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
 
   setPos(playerEl, player.x, player.y, PLAYER_SIZE);
 
