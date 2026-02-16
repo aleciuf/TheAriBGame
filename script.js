@@ -77,49 +77,14 @@ function ensureBubble(el, text) {
   if (!b) {
     b = document.createElement("div");
     b.className = "bubble";
-
-    const box = document.createElement("div");
-    box.className = "box";
-
-    const tail = document.createElement("div");
-    tail.className = "tail";
-
-    b.appendChild(box);
-    b.appendChild(tail);
+    b.innerHTML = `
+      <div class="bubble__box"></div>
+      <div class="bubble__tail"></div>
+    `;
     el.appendChild(b);
-
-    b.style.position = "absolute";
-    b.style.left = "50%";
-    b.style.top = "-4px";
-    b.style.transform = "translate(-50%, -100%)";
-    b.style.zIndex = "9999";
-    b.style.pointerEvents = "none";
-    b.style.display = "flex";
-    b.style.flexDirection = "column";
-    b.style.alignItems = "center";
-    b.style.width = "max-content";
-    b.style.maxWidth = "280px";
-    b.style.minWidth = "80px";
-
-    box.style.background = "#ffffff";
-    box.style.color = "#0b1220";
-    box.style.borderRadius = "16px";
-    box.style.padding = "10px 12px";
-    box.style.fontSize = "13px";
-    box.style.lineHeight = "1.35";
-    box.style.whiteSpace = "normal";
-    box.style.overflowWrap = "anywhere";
-    box.style.boxShadow = "0 10px 24px rgba(0,0,0,0.22)";
-
-    tail.style.width = "0";
-    tail.style.height = "0";
-    tail.style.marginTop = "-2px";
-    tail.style.borderLeft = "10px solid transparent";
-    tail.style.borderRight = "10px solid transparent";
-    tail.style.borderTop = "12px solid #ffffff";
   }
 
-  const box = b.querySelector(".box");
+  const box = b.querySelector(".bubble__box");
   if (box) { box.textContent = text; }
 }
 
