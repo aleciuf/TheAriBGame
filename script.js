@@ -6,7 +6,7 @@ const MAP_H = 2048;
 
 const PLAYER_SIZE = 80;
 const SPEED = 320;
-const PROXIMITY = 110;
+const PROXIMITY = 70;
 
 const CAMERA_ZOOM = 1.1;
 
@@ -43,12 +43,11 @@ const npcs = [
   { id: "character_6", x: 774, y: 1684, size: 70, line: "A grafiko!!!" },
   { id: "character_7", x: 1308, y: 1143, size: 70, line: "Hai un goniometro?" },
   { id: "character_8", x: 1362, y: 1105, size: 70, line: "............" },
-  { id: "character_9", x: 980, y: 860, size: 70, line: "Sto cazzo de grafiko" },
-  { id: "character_10", x: 620, y: 560, size: 70, line: "Miao." },
-  { id: "character_11", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
-  { id: "character_12", x: 420, y: 920, size: 70, line: "............" },
-  { id: "character_13", x: 980, y: 860, size: 70, line: "Sto cazzo de grafiko" },
-  { id: "character_14", x: 620, y: 560, size: 70, line: "Miao." }
+  { id: "character_9", x: 396, y: 251, size: 70, line: "Sto cazzo de grafiko" },
+  { id: "character_10", x: 866, y: 668, size: 70, line: "Miao." },
+  { id: "character_11", x: 949, y: 656, size: 70, line: "Hai un goniometro?" },
+  { id: "character_12", x: 952, y: 489, size: 70, line: "............" },
+  { id: "character_13", x: 877, y: 471, size: 70, line: "Sto cazzo de grafiko" }
 ];
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -96,47 +95,13 @@ function ensureBubble(el, text) {
   if (!b) {
     b = document.createElement("div");
     b.className = "bubble";
-
-    const box = document.createElement("div");
-    box.className = "box";
-
-    const tail = document.createElement("div");
-    tail.className = "tail";
-
-    b.appendChild(box);
-    b.appendChild(tail);
+    b.innerHTML = `<div class="bubble__box"></div><div class="bubble__tail"></div>`;
     el.appendChild(b);
-
-    b.style.position = "absolute";
-    b.style.left = "50%";
-    b.style.top = "-6px";
-    b.style.transform = "translate(-50%, -100%)";
-    b.style.zIndex = "9999";
-    b.style.pointerEvents = "none";
-    b.style.display = "flex";
-    b.style.flexDirection = "column";
-    b.style.alignItems = "center";
-    b.style.width = "max-content";
-    b.style.maxWidth = "280px";
-    b.style.minWidth = "80px";
-
-    box.style.background = "#ffffff";
-    box.style.color = "#0b1220";
-    box.style.borderRadius = "16px";
-    box.style.padding = "10px 12px";
-    box.style.fontSize = "13px";
-    box.style.lineHeight = "1.35";
-    box.style.whiteSpace = "normal";
-    box.style.overflowWrap = "anywhere";
-    box.style.boxShadow = "0 10px 24px rgba(0,0,0,0.22)";
-
-    tail.style.width = "0";
-    tail.style.height = "0";
-    tail.style.marginTop = "-2px";
-    tail.style.borderLeft = "10px solid transparent";
-    tail.style.borderRight = "10px solid transparent";
-    tail.style.borderTop = "12px solid #ffffff";
   }
+
+  const box = b.querySelector(".bubble__box");
+  if (box) { box.textContent = text; }
+}
 
   const box = b.querySelector(".box");
   if (box) { box.textContent = text; }
