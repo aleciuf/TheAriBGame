@@ -4,11 +4,11 @@ const sceneEl = document.getElementById("scene");
 const MAP_W = 2048;
 const MAP_H = 2048;
 
-const PLAYER_SIZE = 90;
+const PLAYER_SIZE = 64;
 const SPEED = 320;
 const PROXIMITY = 110;
 
-const CAMERA_ZOOM = 1.1;
+const CAMERA_ZOOM = 1.6;
 
 const BG_IMAGE = "bg.png";
 const COLLISION_IMAGE = "collision.png";
@@ -35,9 +35,9 @@ bgImg.style.pointerEvents = "none";
 sceneEl.appendChild(bgImg);
 
 const npcs = [
-  { id: "character_1", x: 400, y: 100, size: 70, line: "A grafiko!!!" },
+  { id: "character_1", x: 1125, y: 1663, size: 70, line: "A grafiko!!!" },
   { id: "character_2", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
-  { id: "character_3", x: 420, y: 920, size: 70, line: "............" },
+  { id: "character_3", x: 420, y: 920, size: 70, line: "............", activeImage: "character_3_b.png" },
   { id: "character_4", x: 980, y: 860, size: 74, line: "Sto cazzo de grafiko" },
   { id: "character_5", x: 620, y: 560, size: 70, line: "Miao." }
   { id: "character_6", x: 200, y: 200, size: 70, line: "A grafiko!!!" },
@@ -57,20 +57,30 @@ let joyVec = { x: 0, y: 0 };
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
-function createEntity({ id, x, y, size }) {
+function entitySrc(id) {
+  return `${CHARACTER_PATH}${id}.png`;
+}
+
+function createEntity({ id, x, y, size, baseImage, activeImage }) {
   const el = document.createElement("div");
   el.className = "entity";
   el.dataset.id = id;
 
   const img = document.createElement("img");
-  img.src = `${CHARACTER_PATH}${id}.png`;
+  img.src = baseImage ?? entitySrc(id);
   img.alt = id;
   img.draggable = false;
   el.appendChild(img);
 
   sceneEl.appendChild(el);
   setPos(el, x, y, size);
-  return el;
+
+  return {
+    el,
+    img,
+    baseSrc: img.src,
+    activeSrc: activeImage ? `${CHARACTER_PATH}${activeImage}` : null
+  };
 }
 
 function setPos(el, x, y, size) {
@@ -86,14 +96,49 @@ function ensureBubble(el, text) {
   if (!b) {
     b = document.createElement("div");
     b.className = "bubble";
-    b.innerHTML = `
-      <div class="bubble__box"></div>
-      <div class="bubble__tail"></div>
-    `;
+
+    const box = document.createElement("div");
+    box.className = "box";
+
+    const tail = document.createElement("div");
+    tail.className = "tail";
+
+    b.appendChild(box);
+    b.appendChild(tail);
     el.appendChild(b);
+
+    b.style.position = "absolute";
+    b.style.left = "50%";
+    b.style.top = "-6px";
+    b.style.transform = "translate(-50%, -100%)";
+    b.style.zIndex = "9999";
+    b.style.pointerEvents = "none";
+    b.style.display = "flex";
+    b.style.flexDirection = "column";
+    b.style.alignItems = "center";
+    b.style.width = "max-content";
+    b.style.maxWidth = "280px";
+    b.style.minWidth = "80px";
+
+    box.style.background = "#ffffff";
+    box.style.color = "#0b1220";
+    box.style.borderRadius = "16px";
+    box.style.padding = "10px 12px";
+    box.style.fontSize = "13px";
+    box.style.lineHeight = "1.35";
+    box.style.whiteSpace = "normal";
+    box.style.overflowWrap = "anywhere";
+    box.style.boxShadow = "0 10px 24px rgba(0,0,0,0.22)";
+
+    tail.style.width = "0";
+    tail.style.height = "0";
+    tail.style.marginTop = "-2px";
+    tail.style.borderLeft = "10px solid transparent";
+    tail.style.borderRight = "10px solid transparent";
+    tail.style.borderTop = "12px solid #ffffff";
   }
 
-  const box = b.querySelector(".bubble__box");
+  const box = b.querySelector(".box");
   if (box) { box.textContent = text; }
 }
 
@@ -106,11 +151,11 @@ const npcEls = new Map();
 
 for (const n of npcs) {
   const size = n.size ?? DEFAULT_NPC_SIZE;
-  npcEls.set(n.id, createEntity({ ...n, size }));
+  npcEls.set(n.id, createEntity({ id: n.id, x: n.x, y: n.y, size, activeImage: n.activeImage }));
 }
 
 const player = { x: Math.round(MAP_W / 2), y: Math.round(MAP_H / 2) };
-const playerEl = createEntity({ id: "player", x: player.x, y: player.y, size: PLAYER_SIZE });
+const playerEnt = createEntity({ id: "player", x: player.x, y: player.y, size: PLAYER_SIZE });
 
 let activeId = null;
 
@@ -127,15 +172,26 @@ function nearest() {
   return { id: bestId, d: bestD };
 }
 
+function setNpcSpriteActive(ent, isActive) {
+  if (!ent || !ent.img) { return; }
+
+  if (isActive) {
+    if (ent.activeSrc) { ent.img.src = ent.activeSrc; }
+  } else {
+    ent.img.src = ent.baseSrc;
+  }
+}
+
 function setActive(id) {
   if (activeId === id) { return; }
 
   if (activeId) {
-    const prev = npcEls.get(activeId);
-    if (prev) {
-      prev.classList.remove("active");
-      prev.style.zIndex = "";
-      removeBubble(prev);
+    const prevEnt = npcEls.get(activeId);
+    if (prevEnt) {
+      prevEnt.el.classList.remove("active");
+      prevEnt.el.style.zIndex = "";
+      setNpcSpriteActive(prevEnt, false);
+      removeBubble(prevEnt.el);
     }
   }
 
@@ -143,12 +199,13 @@ function setActive(id) {
   if (!id) { return; }
 
   const n = npcs.find((v) => v.id === id);
-  const el = npcEls.get(id);
-  if (!n || !el) { return; }
+  const ent = npcEls.get(id);
+  if (!n || !ent) { return; }
 
-  el.classList.add("active");
-  el.style.zIndex = "9000";
-  ensureBubble(el, n.line);
+  ent.el.classList.add("active");
+  ent.el.style.zIndex = "9000";
+  setNpcSpriteActive(ent, true);
+  ensureBubble(ent.el, n.line);
 }
 
 window.addEventListener("keydown", (e) => {
@@ -188,7 +245,6 @@ function applyCamera() {
   sceneEl.style.transform = `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.zoom})`;
 }
 
-/* touch move: screen-relative (non si rompe ai bordi) */
 function setKeysFromPoint(clientX, clientY) {
   const rect = worldEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -364,7 +420,7 @@ function loop(t) {
   player.x = clamp(player.x + stepX, 0, MAP_W - PLAYER_SIZE);
   player.y = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
 
-  setPos(playerEl, player.x, player.y, PLAYER_SIZE);
+  setPos(playerEnt.el, player.x, player.y, PLAYER_SIZE);
 
   const n = nearest();
   setActive(n.d <= PROXIMITY ? n.id : null);
