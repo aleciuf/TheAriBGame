@@ -39,7 +39,7 @@ const npcs = [
   { id: "character_2", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
   { id: "character_3", x: 420, y: 920, size: 70, line: "............", activeImage: "character_3_b.png" },
   { id: "character_4", x: 980, y: 860, size: 74, line: "Sto cazzo de grafiko" },
-  { id: "character_5", x: 620, y: 560, size: 70, line: "Miao." }
+  { id: "character_5", x: 620, y: 560, size: 70, line: "Miao." },
   { id: "character_6", x: 200, y: 200, size: 70, line: "A grafiko!!!" },
   { id: "character_7", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
   { id: "character_8", x: 420, y: 920, size: 70, line: "............" },
