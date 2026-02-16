@@ -90,7 +90,7 @@ function ensureBubble(el, text) {
 
     b.style.position = "absolute";
     b.style.left = "50%";
-    b.style.top = "-10px";
+    b.style.top = "-4px";
     b.style.transform = "translate(-50%, -100%)";
     b.style.zIndex = "9999";
     b.style.pointerEvents = "none";
