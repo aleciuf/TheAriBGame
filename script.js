@@ -15,7 +15,7 @@ const DEFAULT_NPC_SIZE = 56;
 const NPC_SCALE = 1;
 
 const CAMERA_ZOOM = 1.6;
-const DEBUG_ENABLED = false;
+const DEBUG_ENABLED = true;
 
 sceneEl.style.width = WORLD_W + "px";
 sceneEl.style.height = WORLD_H + "px";
