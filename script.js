@@ -4,11 +4,11 @@ const sceneEl = document.getElementById("scene");
 const MAP_W = 2048;
 const MAP_H = 2048;
 
-const PLAYER_SIZE = 64;
+const PLAYER_SIZE = 80;
 const SPEED = 320;
 const PROXIMITY = 110;
 
-const CAMERA_ZOOM = 1.6;
+const CAMERA_ZOOM = 1.1;
 
 const BG_IMAGE = "bg.png";
 const COLLISION_IMAGE = "collision.png";
