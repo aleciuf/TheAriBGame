@@ -35,19 +35,19 @@ bgImg.style.pointerEvents = "none";
 sceneEl.appendChild(bgImg);
 
 const npcs = [
-  { id: "character_1", x: 1125, y: 1663, size: 70, line: "A grafiko!!!" },
-  { id: "character_2", x: 1155, y: 1713, size: 70, line: "Hai un goniometro?" },
-  { id: "character_3", x: 396, y: 1674, size: 70, line: "............", activeImage: "character_3_b.png" },
-  { id: "character_4", x: 441, y: 1639, size: 70, line: "Sto cazzo de grafiko" },
-  { id: "character_5", x: 769, y: 1764, size: 70, line: "Miao." },
-  { id: "character_6", x: 774, y: 1684, size: 70, line: "A grafiko!!!" },
-  { id: "character_7", x: 1308, y: 1143, size: 70, line: "Hai un goniometro?" },
-  { id: "character_8", x: 1362, y: 1105, size: 70, line: "............" },
-  { id: "character_9", x: 396, y: 251, size: 70, line: "Sto cazzo de grafiko" },
-  { id: "character_10", x: 866, y: 668, size: 70, line: "Miao." },
-  { id: "character_11", x: 949, y: 656, size: 70, line: "Hai un goniometro?" },
-  { id: "character_12", x: 952, y: 489, size: 70, line: "............" },
-  { id: "character_13", x: 877, y: 471, size: 70, line: "Sto cazzo de grafiko" }
+  { id: "character_1", x: 1125, y: 1663, size: 75, line: "A grafiko!!!" },
+  { id: "character_2", x: 1155, y: 1713, size: 75, line: "Hai un goniometro?" },
+  { id: "character_3", x: 396, y: 1674, size: 75, line: "............", activeImage: "character_3_b.png" },
+  { id: "character_4", x: 441, y: 1639, size: 75, line: "Sto cazzo de grafiko" },
+  { id: "character_5", x: 769, y: 1764, size: 75, line: "Miao." },
+  { id: "character_6", x: 774, y: 1684, size: 75, line: "A grafiko!!!" },
+  { id: "character_7", x: 1308, y: 1143, size: 75, line: "Hai un goniometro?" },
+  { id: "character_8", x: 1362, y: 1105, size: 75, line: "............" },
+  { id: "character_9", x: 396, y: 251, size: 75, line: "Sto cazzo de grafiko" },
+  { id: "character_10", x: 866, y: 668, size: 75, line: "Miao." },
+  { id: "character_11", x: 949, y: 656, size: 75, line: "Hai un goniometro?" },
+  { id: "character_12", x: 952, y: 489, size: 75, line: "............" },
+  { id: "character_13", x: 877, y: 471, size: 75, line: "Sto cazzo de grafiko" }
 ];
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
