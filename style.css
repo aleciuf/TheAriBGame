@@ -82,7 +82,6 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
   margin-top: 16px;
   padding-bottom: 18px;
 }
@@ -109,26 +108,6 @@ body {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-}
-
-.talk-btn {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.10);
-  backdrop-filter: blur(8px);
-  color: #e8eefc;
-  font-size: 26px;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.talk-btn:active {
-  transform: scale(0.98);
 }
 
 @media (min-width: 900px) and (pointer: fine) {
