@@ -37,9 +37,7 @@ sceneEl.appendChild(bgImg);
 const npcs = [
   { id: "character_1", x: 1125, y: 1663, size: 75, line: "A grafiko!!!" },
   { id: "character_2", x: 1155, y: 1713, size: 75, line: "Hai un goniometro?" },
-  //{ id: "character_3", x: 396, y: 1674, size: 75, line: "............", activeImage: "character_3_b.png" },
-  { id: "character_3", x: 396, y: 1674, size: 75, line: "............" },
-  { id: "character_3_b", x: 398, y: 1496, size: 75, line: "............" },
+  { id: "character_3", x: 396, y: 1674, size: 75, line: "............", activeImage: "character_3_b.png" },
   { id: "character_4", x: 441, y: 1639, size: 75, line: "Sto cazzo de grafiko" },
   { id: "character_5", x: 769, y: 1764, size: 75, line: "Miao." },
   { id: "character_6", x: 774, y: 1684, size: 75, line: "A grafiko!!!" },
