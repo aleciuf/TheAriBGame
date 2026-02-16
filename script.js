@@ -36,18 +36,18 @@ sceneEl.appendChild(bgImg);
 
 const npcs = [
   { id: "character_1", x: 1125, y: 1663, size: 70, line: "A grafiko!!!" },
-  { id: "character_2", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
-  { id: "character_3", x: 420, y: 920, size: 70, line: "............", activeImage: "character_3_b.png" },
-  { id: "character_4", x: 980, y: 860, size: 74, line: "Sto cazzo de grafiko" },
-  { id: "character_5", x: 620, y: 560, size: 70, line: "Miao." },
-  { id: "character_6", x: 200, y: 200, size: 70, line: "A grafiko!!!" },
-  { id: "character_7", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
-  { id: "character_8", x: 420, y: 920, size: 70, line: "............" },
-  { id: "character_9", x: 980, y: 860, size: 74, line: "Sto cazzo de grafiko" },
+  { id: "character_2", x: 1155, y: 1713, size: 70, line: "Hai un goniometro?" },
+  { id: "character_3", x: 396, y: 1674, size: 70, line: "............", activeImage: "character_3_b.png" },
+  { id: "character_4", x: 441, y: 1639, size: 70, line: "Sto cazzo de grafiko" },
+  { id: "character_5", x: 769, y: 1764, size: 70, line: "Miao." },
+  { id: "character_6", x: 774, y: 1684, size: 70, line: "A grafiko!!!" },
+  { id: "character_7", x: 1308, y: 1143, size: 70, line: "Hai un goniometro?" },
+  { id: "character_8", x: 1362, y: 1105, size: 70, line: "............" },
+  { id: "character_9", x: 980, y: 860, size: 70, line: "Sto cazzo de grafiko" },
   { id: "character_10", x: 620, y: 560, size: 70, line: "Miao." },
   { id: "character_11", x: 820, y: 320, size: 70, line: "Hai un goniometro?" },
   { id: "character_12", x: 420, y: 920, size: 70, line: "............" },
-  { id: "character_13", x: 980, y: 860, size: 74, line: "Sto cazzo de grafiko" },
+  { id: "character_13", x: 980, y: 860, size: 70, line: "Sto cazzo de grafiko" },
   { id: "character_14", x: 620, y: 560, size: 70, line: "Miao." }
 ];
 
