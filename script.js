@@ -213,17 +213,16 @@ function applyCamera () {
   sceneEl.style.transform = `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.zoom})`;
 }
 
-function setKeysFromPoint (clientX, clientY) {
+function setKeysFromPoint(clientX, clientY) {
   const rect = worldEl.getBoundingClientRect();
-  const cam = getCameraTransform();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
 
-  const wx = (clientX - rect.left - cam.tx) / cam.zoom;
-  const wy = (clientY - rect.top - cam.ty) / cam.zoom;
-
-  const dx = wx - (player.x + PLAYER_SIZE / 2);
-  const dy = wy - (player.y + PLAYER_SIZE / 2);
+  const dx = clientX - cx;
+  const dy = clientY - cy;
 
   const dead = 18;
+
   keys.ArrowLeft = dx < -dead;
   keys.ArrowRight = dx > dead;
   keys.ArrowUp = dy < -dead;
