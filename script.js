@@ -16,7 +16,7 @@ const CHARACTER_PATH = "characters/";
 
 const DEFAULT_NPC_SIZE = 70;
 
-const DEBUG_ENABLED = false;
+const DEBUG_ENABLED = true;
 
 sceneEl.style.width = MAP_W + "px";
 sceneEl.style.height = MAP_H + "px";
@@ -43,6 +43,7 @@ const npcs = [
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 let joyVec = { x: 0, y: 0 };
+let talkHeld = false;
 
 function clamp (v, min, max) { return Math.max(min, Math.min(max, v)); }
 function dist (ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
@@ -137,9 +138,10 @@ for (const n of npcs) {
 const player = { x: Math.round(MAP_W / 2), y: Math.round(MAP_H / 2) };
 const playerEl = createEntity({ id: "player", x: player.x, y: player.y, size: PLAYER_SIZE });
 
+let candidateId = null;
 let activeId = null;
 
-function nearest () {
+function nearestCandidate () {
   let bestId = null;
   let bestD = Infinity;
 
@@ -152,36 +154,75 @@ function nearest () {
   return { id: bestId, d: bestD };
 }
 
-function setActive (id) {
-  if (activeId === id) { return; }
+function setCandidate (id) {
+  if (candidateId === id) { return; }
 
-  if (activeId) {
-    const prev = npcEls.get(activeId);
-    if (prev) {
-      prev.classList.remove("active");
-      prev.style.zIndex = "";
-      removeBubble(prev);
-    }
+  if (candidateId) {
+    const prev = npcEls.get(candidateId);
+    if (prev) { prev.classList.remove("active"); }
   }
 
-  activeId = id;
-  if (!id) { return; }
+  candidateId = id;
 
-  const n = npcs.find((v) => v.id === id);
-  const el = npcEls.get(id);
-  if (!n || !el) { return; }
+  if (candidateId) {
+    const el = npcEls.get(candidateId);
+    if (el) { el.classList.add("active"); }
+  }
+}
 
-  el.classList.add("active");
-  el.style.zIndex = "9000";
-  ensureBubble(el, n.line);
+function updateTalkBubble () {
+  if (!talkHeld) {
+    if (activeId) {
+      const prev = npcEls.get(activeId);
+      if (prev) {
+        prev.style.zIndex = "";
+        removeBubble(prev);
+      }
+    }
+    activeId = null;
+    return;
+  }
+
+  if (!candidateId) {
+    if (activeId) {
+      const prev = npcEls.get(activeId);
+      if (prev) {
+        prev.style.zIndex = "";
+        removeBubble(prev);
+      }
+    }
+    activeId = null;
+    return;
+  }
+
+  if (activeId !== candidateId) {
+    if (activeId) {
+      const prev = npcEls.get(activeId);
+      if (prev) {
+        prev.style.zIndex = "";
+        removeBubble(prev);
+      }
+    }
+    activeId = candidateId;
+  }
+
+  const n = npcs.find((v) => v.id === activeId);
+  const el = npcEls.get(activeId);
+
+  if (n && el) {
+    el.style.zIndex = "9000";
+    ensureBubble(el, n.line);
+  }
 }
 
 window.addEventListener("keydown", (e) => {
   if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
+  if (e.code === "Space") { talkHeld = true; e.preventDefault(); }
 }, { passive: false });
 
 window.addEventListener("keyup", (e) => {
   if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
+  if (e.code === "Space") { talkHeld = false; e.preventDefault(); }
 }, { passive: false });
 
 function stopKeys () {
@@ -313,6 +354,18 @@ if (joy && joyKnob) {
     joyActive = false;
     resetJoy();
   });
+}
+
+const talkBtn = document.getElementById("talkBtn");
+
+if (talkBtn) {
+  const press = (e) => { talkHeld = true; e.preventDefault(); };
+  const release = (e) => { talkHeld = false; e.preventDefault(); };
+
+  talkBtn.addEventListener("pointerdown", press, { passive: false });
+  talkBtn.addEventListener("pointerup", release, { passive: false });
+  talkBtn.addEventListener("pointercancel", release, { passive: false });
+  talkBtn.addEventListener("pointerleave", release, { passive: false });
 }
 
 function inputVector () {
@@ -449,8 +502,9 @@ function loop (t) {
 
   setPos(playerEl, player.x, player.y, PLAYER_SIZE);
 
-  const n = nearest();
-  setActive(n.d <= PROXIMITY ? n.id : null);
+  const nearest = nearestCandidate();
+  setCandidate(nearest.d <= PROXIMITY ? nearest.id : null);
+  updateTalkBubble();
 
   applyCamera();
   requestAnimationFrame(loop);
