@@ -103,10 +103,6 @@ function ensureBubble(el, text) {
   if (box) { box.textContent = text; }
 }
 
-  const box = b.querySelector(".box");
-  if (box) { box.textContent = text; }
-}
-
 function removeBubble(el) {
   const b = el.querySelector(".bubble");
   if (b) { b.remove(); }
