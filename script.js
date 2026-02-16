@@ -8,7 +8,7 @@ const PLAYER_SIZE = 64;
 const SPEED = 320;
 const PROXIMITY = 110;
 
-const CAMERA_ZOOM = 1.6;
+const CAMERA_ZOOM = 1.2;
 
 const BG_IMAGE = "bg.png";
 const COLLISION_IMAGE = "collision.png";
