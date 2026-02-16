@@ -16,7 +16,7 @@ const CHARACTER_PATH = "characters/";
 
 const DEFAULT_NPC_SIZE = 70;
 
-const DEBUG_ENABLED = true;
+const DEBUG_ENABLED = false;
 
 sceneEl.style.width = MAP_W + "px";
 sceneEl.style.height = MAP_H + "px";
@@ -72,13 +72,54 @@ function setPos (el, x, y, size) {
 
 function ensureBubble (el, text) {
   let b = el.querySelector(".bubble");
+
   if (!b) {
     b = document.createElement("div");
     b.className = "bubble";
-    b.innerHTML = `<div class="box"></div><div class="tail"></div>`;
+
+    const box = document.createElement("div");
+    box.className = "box";
+
+    const tail = document.createElement("div");
+    tail.className = "tail";
+
+    b.appendChild(box);
+    b.appendChild(tail);
     el.appendChild(b);
+
+    b.style.position = "absolute";
+    b.style.left = "50%";
+    b.style.top = "-10px";
+    b.style.transform = "translate(-50%, -100%)";
+    b.style.zIndex = "9999";
+    b.style.pointerEvents = "none";
+    b.style.display = "flex";
+    b.style.flexDirection = "column";
+    b.style.alignItems = "center";
+    b.style.width = "max-content";
+    b.style.maxWidth = "280px";
+    b.style.minWidth = "80px";
+
+    box.style.background = "#ffffff";
+    box.style.color = "#0b1220";
+    box.style.borderRadius = "16px";
+    box.style.padding = "10px 12px";
+    box.style.fontSize = "13px";
+    box.style.lineHeight = "1.35";
+    box.style.whiteSpace = "normal";
+    box.style.overflowWrap = "anywhere";
+    box.style.boxShadow = "0 10px 24px rgba(0,0,0,0.22)";
+
+    tail.style.width = "0";
+    tail.style.height = "0";
+    tail.style.marginTop = "-2px";
+    tail.style.borderLeft = "10px solid transparent";
+    tail.style.borderRight = "10px solid transparent";
+    tail.style.borderTop = "12px solid #ffffff";
   }
-  b.querySelector(".box").textContent = text;
+
+  const box = b.querySelector(".box");
+  if (box) { box.textContent = text; }
 }
 
 function removeBubble (el) {
@@ -104,12 +145,7 @@ function nearest () {
 
   for (const n of npcs) {
     const size = n.size ?? DEFAULT_NPC_SIZE;
-    const d = dist(
-      n.x + size / 2,
-      n.y + size / 2,
-      player.x + PLAYER_SIZE / 2,
-      player.y + PLAYER_SIZE / 2
-    );
+    const d = dist(n.x + size / 2, n.y + size / 2, player.x + PLAYER_SIZE / 2, player.y + PLAYER_SIZE / 2);
     if (d < bestD) { bestD = d; bestId = n.id; }
   }
 
@@ -123,6 +159,7 @@ function setActive (id) {
     const prev = npcEls.get(activeId);
     if (prev) {
       prev.classList.remove("active");
+      prev.style.zIndex = "";
       removeBubble(prev);
     }
   }
@@ -135,6 +172,7 @@ function setActive (id) {
   if (!n || !el) { return; }
 
   el.classList.add("active");
+  el.style.zIndex = "9000";
   ensureBubble(el, n.line);
 }
 
@@ -153,12 +191,32 @@ function stopKeys () {
   keys.ArrowRight = false;
 }
 
-function setKeysFromPoint (clientX, clientY) {
+function getCameraTransform () {
   const rect = worldEl.getBoundingClientRect();
   const viewW = rect.width;
   const viewH = rect.height;
 
+  const targetX = viewW / 2 - (player.x + PLAYER_SIZE / 2) * CAMERA_ZOOM;
+  const targetY = viewH / 2 - (player.y + PLAYER_SIZE / 2) * CAMERA_ZOOM;
+
+  const minX = viewW - MAP_W * CAMERA_ZOOM;
+  const minY = viewH - MAP_H * CAMERA_ZOOM;
+
+  const tx = clamp(targetX, minX, 0);
+  const ty = clamp(targetY, minY, 0);
+
+  return { tx, ty, zoom: CAMERA_ZOOM };
+}
+
+function applyCamera () {
   const cam = getCameraTransform();
+  sceneEl.style.transform = `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.zoom})`;
+}
+
+function setKeysFromPoint (clientX, clientY) {
+  const rect = worldEl.getBoundingClientRect();
+  const cam = getCameraTransform();
+
   const wx = (clientX - rect.left - cam.tx) / cam.zoom;
   const wy = (clientY - rect.top - cam.ty) / cam.zoom;
 
@@ -352,28 +410,6 @@ window.addEventListener("keydown", (e) => {
     toggleDebug();
   }
 });
-
-function getCameraTransform () {
-  const rect = worldEl.getBoundingClientRect();
-  const viewW = rect.width;
-  const viewH = rect.height;
-
-  const targetX = viewW / 2 - (player.x + PLAYER_SIZE / 2) * CAMERA_ZOOM;
-  const targetY = viewH / 2 - (player.y + PLAYER_SIZE / 2) * CAMERA_ZOOM;
-
-  const minX = viewW - MAP_W * CAMERA_ZOOM;
-  const minY = viewH - MAP_H * CAMERA_ZOOM;
-
-  const tx = clamp(targetX, minX, 0);
-  const ty = clamp(targetY, minY, 0);
-
-  return { tx, ty, zoom: CAMERA_ZOOM };
-}
-
-function applyCamera () {
-  const cam = getCameraTransform();
-  sceneEl.style.transform = `translate(${cam.tx}px, ${cam.ty}px) scale(${cam.zoom})`;
-}
 
 window.addEventListener("resize", () => {
   applyCamera();
