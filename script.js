@@ -1,12 +1,12 @@
 const worldEl = document.getElementById("world");
 const sceneEl = document.getElementById("scene");
 
-const MAP_W = 1280;
-const MAP_H = 1270;
+const MAP_W = 2048;
+const MAP_H = 2048;
 
 const PLAYER_SIZE = 64;
 const SPEED = 320;
-const PROXIMITY = 110;
+const PROXIMITY = 70;
 
 const CAMERA_ZOOM = 1.6;
 
