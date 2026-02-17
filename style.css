@@ -308,6 +308,9 @@ body {
   font-weight: 600;
   pointer-events: none;
   white-space: nowrap;
+  display: inline-block;
+  max-width: 90vw;
+  text-align: center;
 }
 
 .splash.hide {
