@@ -16,6 +16,57 @@ function startMusicOnce() {
   bgMusic.play().catch(() => { musicStarted = false; });
 }
 
+/* sfx */
+
+const SFX_VOLUME = 0.85;
+const sfxCache = new Map();
+
+function normalizePath(p) {
+  return String(p || "").replaceAll("\\", "/");
+}
+
+function resolveNpcSoundPath(p) {
+  const s = normalizePath(p);
+  if (!s) return "";
+  if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("data:")) return s;
+  if (s.startsWith("/")) return s;
+  if (s.includes("/")) return s;
+  return `${CHARACTER_PATH}${s}`;
+}
+
+function getSfx(src) {
+  const key = normalizePath(src);
+  if (sfxCache.has(key)) return sfxCache.get(key);
+  const a = new Audio(key);
+  a.preload = "auto";
+  a.volume = SFX_VOLUME;
+  sfxCache.set(key, a);
+  return a;
+}
+
+function playSfx(src) {
+  if (!src || !gameStarted) return;
+
+  const resolved = resolveNpcSoundPath(src);
+  if (!resolved) return;
+
+  const a = getSfx(resolved);
+
+  try {
+    if (!a.paused && a.currentTime > 0 && a.currentTime < (a.duration || 9999)) {
+      const b = a.cloneNode(true);
+      b.volume = SFX_VOLUME;
+      b.play().catch(() => {});
+      return;
+    }
+
+    a.currentTime = 0;
+    a.play().catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
 /* splash */
 
 const splashEl = document.getElementById("splash");
@@ -24,6 +75,10 @@ let gameStarted = false;
 function startGameOnce() {
   if (gameStarted) return;
   gameStarted = true;
+
+  activeId = null;
+  resetStillNearState();
+  resetBubbleDelayState();
 
   startMusicOnce();
 
@@ -101,7 +156,8 @@ const npcs = [
   { id: "character_10", x: 866, y: 668, size: 90, line: "Miao." },
   { id: "character_11", x: 949, y: 656, size: 90, line: "Hai un goniometro?" },
   { id: "character_12", x: 952, y: 489, size: 90, line: "............" },
-  { id: "character_13", x: 877, y: 471, size: 90, line: "Sto cazzo de grafiko" }
+  { id: "character_13", x: 877, y: 471, size: 90, line: "Sto cazzo de grafiko" },
+  { id: "character_x", x: 250, y: 850, size: 95, line: "<bush {<nullByte>} Auguri<Ari>! ></bush>", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -187,6 +243,18 @@ let stillNearSeconds = 0;
 let lastNearId = null;
 let activeSpriteApplied = false;
 
+let bubbleDelaySeconds = 0;
+let bubbleShown = false;
+let bubbleDelayTarget = 0;
+let bubbleDelayActiveId = null;
+
+function resetBubbleDelayState() {
+  bubbleDelaySeconds = 0;
+  bubbleShown = false;
+  bubbleDelayTarget = 0;
+  bubbleDelayActiveId = null;
+}
+
 function nearest() {
   let bestId = null;
   let bestD = Infinity;
@@ -230,6 +298,7 @@ function setActive(id) {
 
   activeId = id;
   resetStillNearState();
+  resetBubbleDelayState();
 
   if (!id) return;
 
@@ -241,7 +310,16 @@ function setActive(id) {
   ent.el.style.zIndex = "9000";
 
   setNpcSpriteActive(ent, false);
-  ensureBubble(ent.el, n.line);
+
+  bubbleDelayTarget = Math.max(0, Number(n.delay ?? 0) || 0);
+  bubbleDelayActiveId = id;
+
+  if (bubbleDelayTarget <= 0) {
+    ensureBubble(ent.el, n.line);
+    bubbleShown = true;
+  }
+
+  if (n.sound) playSfx(n.sound);
 }
 
 window.addEventListener("keydown", (e) => {
@@ -521,6 +599,23 @@ function updateNpcActiveSprite(dt, isPlayerMoving) {
   }
 }
 
+function updateNpcBubbleDelay(dt) {
+  if (!activeId) return;
+  if (bubbleShown) return;
+  if (bubbleDelayActiveId !== activeId) return;
+
+  const n = npcs.find(v => v.id === activeId);
+  const ent = npcEls.get(activeId);
+  if (!n || !ent) return;
+
+  bubbleDelaySeconds += dt;
+
+  if (bubbleDelaySeconds >= bubbleDelayTarget) {
+    ensureBubble(ent.el, n.line);
+    bubbleShown = true;
+  }
+}
+
 function inputVector() {
   let x = 0;
   let y = 0;
@@ -572,6 +667,7 @@ function loop(t) {
   setActive(n.d <= PROXIMITY ? n.id : null);
 
   updateNpcActiveSprite(dt, isPlayerMoving);
+  updateNpcBubbleDelay(dt);
 
   applyCamera();
   requestAnimationFrame(loop);
