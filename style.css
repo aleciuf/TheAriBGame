@@ -299,6 +299,7 @@ body {
   left: 50%;
   bottom: calc(150px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
+
   padding: 14px 20px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.45);
@@ -307,10 +308,12 @@ body {
   letter-spacing: 0.4px;
   font-weight: 600;
   pointer-events: none;
-  white-space: nowrap;
-  display: inline-block;
-  max-width: 90vw;
-  text-align: center;
+
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  white-space: nowrap !important;
+  line-height: 1.1;
+  -webkit-text-size-adjust: 100%;
 }
 
 .splash.hide {
