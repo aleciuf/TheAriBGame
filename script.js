@@ -127,6 +127,102 @@ const MOVE_EPSILON_PX = 0.25;
 const INPUT_MOVE_EPSILON = 0.04;
 const INPUT_INTENT_EPSILON = 0.02;
 
+/* collision */
+
+const COLLISION_INSET = 2;
+const collision = {
+  ready: false,
+  w: MAP_W,
+  h: MAP_H,
+  ctx: null,
+  imgData: null
+};
+
+function initCollisionMap() {
+  const img = new Image();
+  img.src = COLLISION_IMAGE;
+  img.onload = () => {
+    const c = document.createElement("canvas");
+    c.width = MAP_W;
+    c.height = MAP_H;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, MAP_W, MAP_H);
+
+    collision.ctx = ctx;
+    collision.imgData = ctx.getImageData(0, 0, MAP_W, MAP_H);
+    collision.ready = true;
+  };
+  img.onerror = () => {
+    collision.ready = false;
+  };
+}
+
+const COLLISION_ALPHA_MIN = 10;
+const COLLISION_LUMA_WALL_MAX = 90;
+
+function isWallAtPixel(px, py) {
+  if (!collision.ready || !collision.imgData) return false;
+
+  const x = Math.max(0, Math.min(MAP_W - 1, Math.round(px)));
+  const y = Math.max(0, Math.min(MAP_H - 1, Math.round(py)));
+
+  const i = (y * MAP_W + x) * 4;
+  const d = collision.imgData.data;
+
+  const r = d[i];
+  const g = d[i + 1];
+  const b = d[i + 2];
+  const a = d[i + 3];
+
+  if (a < COLLISION_ALPHA_MIN) return false;
+
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luma <= COLLISION_LUMA_WALL_MAX;
+}
+
+function collidesAtRect(x, y, size) {
+  const inset = COLLISION_INSET;
+
+  const left = x + inset;
+  const top = y + inset;
+  const right = x + size - inset;
+  const bottom = y + size - inset;
+
+  const midX = (left + right) / 2;
+  const midY = (top + bottom) / 2;
+
+  return (
+    isWallAtPixel(left, top) ||
+    isWallAtPixel(right, top) ||
+    isWallAtPixel(left, bottom) ||
+    isWallAtPixel(right, bottom) ||
+    isWallAtPixel(midX, top) ||
+    isWallAtPixel(midX, bottom) ||
+    isWallAtPixel(left, midY) ||
+    isWallAtPixel(right, midY)
+  );
+}
+
+function readPixelRGBA(px, py) {
+  if (!collision.ready || !collision.imgData) return null;
+
+  const x = Math.max(0, Math.min(MAP_W - 1, Math.round(px)));
+  const y = Math.max(0, Math.min(MAP_H - 1, Math.round(py)));
+
+  const i = (y * MAP_W + x) * 4;
+  const d = collision.imgData.data;
+
+  return { x, y, r: d[i], g: d[i + 1], b: d[i + 2], a: d[i + 3] };
+}
+
+function lumaOf(r, g, b) {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 sceneEl.style.width = MAP_W + "px";
 sceneEl.style.height = MAP_H + "px";
 
@@ -142,6 +238,8 @@ bgImg.style.width = MAP_W + "px";
 bgImg.style.height = MAP_H + "px";
 bgImg.style.pointerEvents = "none";
 sceneEl.appendChild(bgImg);
+
+initCollisionMap();
 
 const npcs = [
   { id: "character_1", x: 1125, y: 1663, size: 90, line: "A grafiko!!!" },
@@ -345,6 +443,21 @@ function stopKeys() {
   keys.ArrowLeft = false;
   keys.ArrowRight = false;
 }
+
+window.addEventListener("keydown", (e) => {
+  if (!gameStarted) return;
+  if (e.key.toLowerCase() !== "t") return;
+
+  const cx = player.x + PLAYER_SIZE / 2;
+  const cy = player.y + PLAYER_SIZE / 2;
+
+  const p = readPixelRGBA(cx, cy);
+  if (!p) { console.log("collision not ready"); return; }
+
+  const l = lumaOf(p.r, p.g, p.b);
+  console.log(`sample @(${p.x},${p.y}) rgba(${p.r},${p.g},${p.b},${p.a}) luma=${l.toFixed(1)} wall=${l <= COLLISION_LUMA_WALL_MAX}`);
+});
+
 
 function getCameraTransform() {
   const rect = worldEl.getBoundingClientRect();
@@ -653,8 +766,21 @@ function loop(t) {
   const wasX = player.x;
   const wasY = player.y;
 
-  player.x = clamp(player.x + stepX, 0, MAP_W - PLAYER_SIZE);
-  player.y = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
+  let nextX = clamp(player.x + stepX, 0, MAP_W - PLAYER_SIZE);
+  let nextY = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
+
+  if (collision.ready) {
+    if (!collidesAtRect(nextX, player.y, PLAYER_SIZE)) {
+      player.x = nextX;
+    }
+
+    if (!collidesAtRect(player.x, nextY, PLAYER_SIZE)) {
+      player.y = nextY;
+    }
+  } else {
+    player.x = nextX;
+    player.y = nextY;
+  }
 
   setPos(playerEnt.el, player.x, player.y, PLAYER_SIZE);
 
