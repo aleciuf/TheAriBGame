@@ -174,7 +174,7 @@ const collision = {
 };
 
 const COLLISION_BLACK_MAX = 12;
-const COLLISION_FOOT_Y_INSET = 25;
+const COLLISION_FOOT_Y_INSET = 30;
 
 function initCollisionMap() {
   const img = new Image();
