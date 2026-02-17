@@ -1,23 +1,72 @@
+:root {
+  --bg: #0b1220;
+  --fg: #e8eefc;
+
+  --wrap-max: 980px;
+
+  /* spazi fissi dai bordi */
+  --pad-x: 14px;
+  --pad-top: 14px;
+  --pad-bottom: 14px;
+
+  /* stime altezze header e controlli */
+  --top-h: 84px;
+  --controls-h: 190px;
+
+  /* limiti viewport di gioco */
+  --world-min-h: 320px;
+  --world-max-h: 78svh;
+
+  --world-radius: 18px;
+
+  --joy-size: 140px;
+  --joy-knob: 56px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   font-family: system-ui, Arial, sans-serif;
-  background: #0b1220;
-  color: #e8eefc;
+  background: var(--bg);
+  color: var(--fg);
   display: grid;
-  place-items: center;
+  place-items: start center;
   min-height: 100vh;
+  min-height: 100svh;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 .wrap {
-  width: min(980px, 94vw);
+  width: min(var(--wrap-max), 94vw);
+  padding-left: calc(var(--pad-x) + env(safe-area-inset-left));
+  padding-right: calc(var(--pad-x) + env(safe-area-inset-right));
+  padding-top: calc(var(--pad-top) + env(safe-area-inset-top));
+  padding-bottom: calc(var(--pad-bottom) + env(safe-area-inset-bottom));
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
 }
 
 .top {
   display: flex;
   justify-content: center;
   text-align: center;
-  margin-top: 30px;
-  margin-bottom: 16px;
+  margin: 0;
+  min-height: var(--top-h);
+  align-items: center;
 }
 
 .title {
@@ -33,13 +82,17 @@ body {
 .world {
   position: relative;
   width: 100%;
-  aspect-ratio: 900 / 520;
-  border-radius: 18px;
+  border-radius: var(--world-radius);
   overflow: hidden;
   outline: none;
   box-shadow: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
+  height: clamp(
+    var(--world-min-h),
+    calc(100svh - (var(--pad-top) + var(--pad-bottom)) - var(--top-h) - var(--controls-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom)),
+    var(--world-max-h)
+  );
 }
 
 .world:focus,
@@ -64,6 +117,16 @@ body {
   z-index: 2;
 }
 
+.entity__fx {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 .entity.active {
   transform: scale(1.2);
   z-index: 50;
@@ -78,17 +141,48 @@ body {
   -webkit-user-drag: none;
 }
 
+.entity__fx img {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@keyframes npc-bounce-squash {
+  0% { transform: translate3d(0, 0, 0) scaleX(1.04) scaleY(0.96); }
+  15% { transform: translate3d(0, -2px, 0) scaleX(1.01) scaleY(0.99); }
+  30% { transform: translate3d(0, -4px, 0) scaleX(0.97) scaleY(1.03); }
+  50% { transform: translate3d(0, -6px, 0) scaleX(0.92) scaleY(1.08); }
+  70% { transform: translate3d(0, -4px, 0) scaleX(0.97) scaleY(1.03); }
+  85% { transform: translate3d(0, -2px, 0) scaleX(1.01) scaleY(0.99); }
+  100% { transform: translate3d(0, 0, 0) scaleX(1.04) scaleY(0.96); }
+}
+
+.entity.npc .entity__fx {
+  animation: npc-bounce-squash 1.55s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+  animation-delay: var(--bounce-delay, 0s);
+}
+
+.entity.npc.active .entity__fx {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entity.npc .entity__fx {
+    animation: none;
+  }
+}
+
 .controls {
+  min-height: var(--controls-h);
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 16px;
-  padding-bottom: 18px;
+  margin-top: 12px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 .joy {
-  width: 140px;
-  height: 140px;
+  width: var(--joy-size);
+  height: var(--joy-size);
   border-radius: 999px;
   background: rgba(255,255,255,0.10);
   border: 1px solid rgba(255,255,255,0.18);
@@ -99,8 +193,8 @@ body {
 }
 
 .joy__knob {
-  width: 56px;
-  height: 56px;
+  width: var(--joy-knob);
+  height: var(--joy-knob);
   border-radius: 999px;
   background: rgba(255,255,255,0.22);
   border: 1px solid rgba(255,255,255,0.22);
@@ -150,4 +244,18 @@ body {
   .controls {
     display: none;
   }
+
+  :root {
+    --controls-h: 0px;
+  }
+}
+
+@media (max-width: 520px) {
+  :root {
+    --top-h: 72px;
+    --controls-h: 180px;
+  }
+
+  .title { font-size: 22px; }
+  .subtitle { font-size: 22px; margin-top: 4px; }
 }
