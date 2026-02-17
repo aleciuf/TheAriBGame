@@ -307,6 +307,7 @@ body {
   letter-spacing: 0.4px;
   font-weight: 600;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .splash.hide {
