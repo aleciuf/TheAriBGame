@@ -245,16 +245,6 @@ const npcs = [
 ];
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
-
-function mapWasdToArrows(e, isDown) {
-  const k = e.key.toLowerCase();
-  if (k === "w") { keys.ArrowUp = isDown; return true; }
-  if (k === "s") { keys.ArrowDown = isDown; return true; }
-  if (k === "a") { keys.ArrowLeft = isDown; return true; }
-  if (k === "d") { keys.ArrowRight = isDown; return true; }
-  return false;
-}
-
 const joyState = { x: 0, y: 0, mag: 0, intentMag: 0, active: false };
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -415,24 +405,41 @@ function setActive(id) {
   if (n.sound) playSfx(n.sound);
 }
 
+function applyArrowStateFromKey(e, isDown) {
+  if (e.key in keys) { keys[e.key] = isDown; return true; }
+
+  const k = e.key.toLowerCase();
+  if (k === "w") { keys.ArrowUp = isDown; return true; }
+  if (k === "s") { keys.ArrowDown = isDown; return true; }
+  if (k === "a") { keys.ArrowLeft = isDown; return true; }
+  if (k === "d") { keys.ArrowRight = isDown; return true; }
+
+  return false;
+}
+
 window.addEventListener("keydown", (e) => {
   if (!gameStarted) {
     if (e.key === "Enter" || e.key === " " || e.code === "Space") {
       startGameOnce();
       e.preventDefault();
+      return;
     }
+
+    if (applyArrowStateFromKey(e, true)) {
+      startGameOnce();
+      e.preventDefault();
+      return;
+    }
+
     return;
   }
 
-  if (mapWasdToArrows(e, true)) { e.preventDefault(); return; }
-  if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
+  if (applyArrowStateFromKey(e, true)) { e.preventDefault(); }
 }, { passive: false });
 
 window.addEventListener("keyup", (e) => {
   if (!gameStarted) return;
-
-  if (mapWasdToArrows(e, false)) { e.preventDefault(); return; }
-  if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
+  if (applyArrowStateFromKey(e, false)) { e.preventDefault(); }
 }, { passive: false });
 
 function stopKeys() {
@@ -489,12 +496,11 @@ let worldPointerDown = false;
 let worldClickMove = false;
 
 worldEl.addEventListener("pointerdown", (e) => {
-  if (!gameStarted) return;
+  if (!gameStarted) startGameOnce();
   worldEl.focus({ preventScroll: true });
 
   worldPointerDown = true;
   setKeysFromPoint(e.clientX, e.clientY);
-
   worldClickMove = true;
 
   e.preventDefault();
@@ -509,20 +515,15 @@ worldEl.addEventListener("pointermove", (e) => {
 
 worldEl.addEventListener("pointerup", (e) => {
   if (!gameStarted) return;
-
   worldPointerDown = false;
-
   if (!worldClickMove) stopKeys();
-
   e.preventDefault();
 }, { passive: false, capture: true });
 
 worldEl.addEventListener("dblclick", (e) => {
-  if (!gameStarted) return;
-
+  if (!gameStarted) startGameOnce();
   worldClickMove = false;
   stopKeys();
-
   e.preventDefault();
 }, { passive: false });
 
@@ -603,11 +604,7 @@ if (joy && joyKnob) {
   }
 
   joy.addEventListener("pointerdown", (e) => {
-    if (!gameStarted) {
-      startGameOnce();
-      e.preventDefault();
-      return;
-    }
+    if (!gameStarted) startGameOnce();
 
     joyActive = true;
     joyState.active = true;
