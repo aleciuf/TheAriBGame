@@ -141,7 +141,7 @@ const INPUT_INTENT_EPSILON = 0.02;
 
 /* collision */
 
-const COLLISION_INSET = 2;
+const COLLISION_INSET = 4;
 const collision = {
   ready: false,
   w: MAP_W,
@@ -430,24 +430,16 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " " || e.code === "Space") {
       startGameOnce();
       e.preventDefault();
-      return;
     }
-
-    if (applyArrowStateFromKey(e, true)) {
-      startGameOnce();
-      e.preventDefault();
-      return;
-    }
-
     return;
   }
 
-  if (applyArrowStateFromKey(e, true)) { e.preventDefault(); }
+  if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
 }, { passive: false });
 
 window.addEventListener("keyup", (e) => {
   if (!gameStarted) return;
-  if (applyArrowStateFromKey(e, false)) { e.preventDefault(); }
+  if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
 }, { passive: false });
 
 function stopKeys() {
@@ -501,16 +493,12 @@ function setKeysFromPoint(clientX, clientY) {
 }
 
 let worldPointerDown = false;
-let worldClickMove = false;
 
 worldEl.addEventListener("pointerdown", (e) => {
   if (!gameStarted) startGameOnce();
-  worldEl.focus({ preventScroll: true });
-
   worldPointerDown = true;
+  worldEl.focus({ preventScroll: true });
   setKeysFromPoint(e.clientX, e.clientY);
-  worldClickMove = true;
-
   e.preventDefault();
 }, { passive: false, capture: true });
 
@@ -524,20 +512,13 @@ worldEl.addEventListener("pointermove", (e) => {
 worldEl.addEventListener("pointerup", (e) => {
   if (!gameStarted) return;
   worldPointerDown = false;
-  if (!worldClickMove) stopKeys();
+  stopKeys();
   e.preventDefault();
 }, { passive: false, capture: true });
 
-worldEl.addEventListener("dblclick", (e) => {
-  if (!gameStarted) startGameOnce();
-  worldClickMove = false;
-  stopKeys();
-  e.preventDefault();
-}, { passive: false });
-
 worldEl.addEventListener("pointercancel", () => {
   worldPointerDown = false;
-  if (!worldClickMove) stopKeys();
+  stopKeys();
 }, { capture: true });
 
 const joy = document.getElementById("joy");
