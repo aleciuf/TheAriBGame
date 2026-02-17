@@ -73,6 +73,8 @@ const splashEl = document.getElementById("splash");
 let gameStarted = false;
 
 function startGameOnce() {
+  console.log("startGameOnce");
+  
   if (gameStarted) return;
   gameStarted = true;
 
@@ -91,6 +93,14 @@ function startGameOnce() {
     }, 240);
   }
 }
+
+function startOnFirstUserGesture() {
+  startGameOnce();
+}
+
+window.addEventListener("pointerdown", startOnFirstUserGesture, { capture: true, passive: true, once: true });
+window.addEventListener("keydown", startOnFirstUserGesture, { capture: true, passive: true, once: true });
+
 
 if (splashEl) {
   splashEl.addEventListener("pointerdown", (e) => {
