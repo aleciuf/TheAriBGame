@@ -173,6 +173,8 @@ function initCollisionMap() {
   };
 }
 
+const COLLISION_BLACK_MAX = 22;
+
 function isWallAtPixel(px, py) {
   if (!collision.ready || !collision.imgData) return false;
 
@@ -189,7 +191,7 @@ function isWallAtPixel(px, py) {
 
   if (a === 0) return false;
 
-  return r <= 25 && g <= 25 && b <= 25;
+  return r <= COLLISION_BLACK_MAX && g <= COLLISION_BLACK_MAX && b <= COLLISION_BLACK_MAX;
 }
 
 function collidesAtRect(x, y, size) {
