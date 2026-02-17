@@ -141,7 +141,10 @@ const INPUT_INTENT_EPSILON = 0.02;
 
 /* collision */
 
-const COLLISION_INSET = 4;
+const COLLISION_INSET = 3;
+const COLLISION_BLACK_MAX = 12;
+const COLLISION_HITS_TO_BLOCK = 2;
+
 const collision = {
   ready: false,
   w: MAP_W,
@@ -167,13 +170,12 @@ function initCollisionMap() {
     collision.ctx = ctx;
     collision.imgData = ctx.getImageData(0, 0, MAP_W, MAP_H);
     collision.ready = true;
+    relocatePlayerIfStuck();
   };
   img.onerror = () => {
     collision.ready = false;
   };
 }
-
-const COLLISION_BLACK_MAX = 22;
 
 function isWallAtPixel(px, py) {
   if (!collision.ready || !collision.imgData) return false;
@@ -205,16 +207,49 @@ function collidesAtRect(x, y, size) {
   const midX = (left + right) / 2;
   const midY = (top + bottom) / 2;
 
-  return (
-    isWallAtPixel(left, top) ||
-    isWallAtPixel(right, top) ||
-    isWallAtPixel(left, bottom) ||
-    isWallAtPixel(right, bottom) ||
-    isWallAtPixel(midX, top) ||
-    isWallAtPixel(midX, bottom) ||
-    isWallAtPixel(left, midY) ||
-    isWallAtPixel(right, midY)
-  );
+  const pts = [
+    [left, top], [right, top], [left, bottom], [right, bottom],
+    [midX, top], [midX, bottom], [left, midY], [right, midY]
+  ];
+
+  let hits = 0;
+  for (const [px, py] of pts) {
+    if (isWallAtPixel(px, py)) {
+      hits++;
+      if (hits >= COLLISION_HITS_TO_BLOCK) return true;
+    }
+  }
+
+  return false;
+}
+
+function relocatePlayerIfStuck() {
+  if (!collision.ready) return;
+
+  if (!collidesAtRect(player.x, player.y, PLAYER_SIZE)) return;
+
+  const startX = Math.round(player.x);
+  const startY = Math.round(player.y);
+
+  const maxR = 220;
+  const step = 4;
+
+  for (let r = 0; r <= maxR; r += step) {
+    for (let dy = -r; dy <= r; dy += step) {
+      for (let dx = -r; dx <= r; dx += step) {
+        const nx = clamp(startX + dx, 0, MAP_W - PLAYER_SIZE);
+        const ny = clamp(startY + dy, 0, MAP_H - PLAYER_SIZE);
+
+        if (!collidesAtRect(nx, ny, PLAYER_SIZE)) {
+          player.x = nx;
+          player.y = ny;
+          setPos(playerEnt.el, player.x, player.y, PLAYER_SIZE);
+          applyCamera();
+          return;
+        }
+      }
+    }
+  }
 }
 
 sceneEl.style.width = MAP_W + "px";
