@@ -74,7 +74,7 @@ let gameStarted = false;
 
 function startGameOnce() {
   console.log("startGameOnce");
-  
+
   if (gameStarted) return;
   gameStarted = true;
 
@@ -173,9 +173,6 @@ function initCollisionMap() {
   };
 }
 
-const COLLISION_ALPHA_MIN = 10;
-const COLLISION_LUMA_WALL_MAX = 90;
-
 function isWallAtPixel(px, py) {
   if (!collision.ready || !collision.imgData) return false;
 
@@ -190,10 +187,9 @@ function isWallAtPixel(px, py) {
   const b = d[i + 2];
   const a = d[i + 3];
 
-  if (a < COLLISION_ALPHA_MIN) return false;
+  if (a === 0) return false;
 
-  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luma <= COLLISION_LUMA_WALL_MAX;
+  return r <= 25 && g <= 25 && b <= 25;
 }
 
 function collidesAtRect(x, y, size) {
@@ -668,6 +664,14 @@ function toggleDebug() {
   debugEl.style.display = debugVisible ? "block" : "none";
 }
 
+let collisionEnabled = true;
+
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() !== "c") return;
+  collisionEnabled = !collisionEnabled;
+  console.log("collisionEnabled =", collisionEnabled);
+});
+
 window.addEventListener("keydown", (e) => {
   if (!gameStarted) return;
   if (e.key.toLowerCase() === "d") toggleDebug();
@@ -777,7 +781,7 @@ function loop(t) {
   let nextX = clamp(player.x + stepX, 0, MAP_W - PLAYER_SIZE);
   let nextY = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
 
-  if (collision.ready) {
+  if (collision.ready && collisionEnabled) {
     if (!collidesAtRect(nextX, player.y, PLAYER_SIZE)) {
       player.x = nextX;
     }
