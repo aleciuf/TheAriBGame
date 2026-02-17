@@ -82,6 +82,8 @@ function startGameOnce() {
 
   startMusicOnce();
 
+  if (worldEl) worldEl.focus({ preventScroll: true });
+
   if (splashEl) {
     splashEl.classList.add("hide");
     window.setTimeout(() => {
@@ -207,22 +209,6 @@ function collidesAtRect(x, y, size) {
   );
 }
 
-function readPixelRGBA(px, py) {
-  if (!collision.ready || !collision.imgData) return null;
-
-  const x = Math.max(0, Math.min(MAP_W - 1, Math.round(px)));
-  const y = Math.max(0, Math.min(MAP_H - 1, Math.round(py)));
-
-  const i = (y * MAP_W + x) * 4;
-  const d = collision.imgData.data;
-
-  return { x, y, r: d[i], g: d[i + 1], b: d[i + 2], a: d[i + 3] };
-}
-
-function lumaOf(r, g, b) {
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
 sceneEl.style.width = MAP_W + "px";
 sceneEl.style.height = MAP_H + "px";
 
@@ -259,6 +245,15 @@ const npcs = [
 ];
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+function mapWasdToArrows(e, isDown) {
+  const k = e.key.toLowerCase();
+  if (k === "w") { keys.ArrowUp = isDown; return true; }
+  if (k === "s") { keys.ArrowDown = isDown; return true; }
+  if (k === "a") { keys.ArrowLeft = isDown; return true; }
+  if (k === "d") { keys.ArrowRight = isDown; return true; }
+  return false;
+}
 
 const joyState = { x: 0, y: 0, mag: 0, intentMag: 0, active: false };
 
@@ -429,11 +424,14 @@ window.addEventListener("keydown", (e) => {
     return;
   }
 
+  if (mapWasdToArrows(e, true)) { e.preventDefault(); return; }
   if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
 }, { passive: false });
 
 window.addEventListener("keyup", (e) => {
   if (!gameStarted) return;
+
+  if (mapWasdToArrows(e, false)) { e.preventDefault(); return; }
   if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
 }, { passive: false });
 
@@ -443,21 +441,6 @@ function stopKeys() {
   keys.ArrowLeft = false;
   keys.ArrowRight = false;
 }
-
-window.addEventListener("keydown", (e) => {
-  if (!gameStarted) return;
-  if (e.key.toLowerCase() !== "t") return;
-
-  const cx = player.x + PLAYER_SIZE / 2;
-  const cy = player.y + PLAYER_SIZE / 2;
-
-  const p = readPixelRGBA(cx, cy);
-  if (!p) { console.log("collision not ready"); return; }
-
-  const l = lumaOf(p.r, p.g, p.b);
-  console.log(`sample @(${p.x},${p.y}) rgba(${p.r},${p.g},${p.b},${p.a}) luma=${l.toFixed(1)} wall=${l <= COLLISION_LUMA_WALL_MAX}`);
-});
-
 
 function getCameraTransform() {
   const rect = worldEl.getBoundingClientRect();
@@ -503,11 +486,17 @@ function setKeysFromPoint(clientX, clientY) {
 }
 
 let worldPointerDown = false;
+let worldClickMove = false;
 
 worldEl.addEventListener("pointerdown", (e) => {
   if (!gameStarted) return;
+  worldEl.focus({ preventScroll: true });
+
   worldPointerDown = true;
   setKeysFromPoint(e.clientX, e.clientY);
+
+  worldClickMove = true;
+
   e.preventDefault();
 }, { passive: false, capture: true });
 
@@ -520,14 +509,26 @@ worldEl.addEventListener("pointermove", (e) => {
 
 worldEl.addEventListener("pointerup", (e) => {
   if (!gameStarted) return;
+
   worldPointerDown = false;
-  stopKeys();
+
+  if (!worldClickMove) stopKeys();
+
   e.preventDefault();
 }, { passive: false, capture: true });
 
+worldEl.addEventListener("dblclick", (e) => {
+  if (!gameStarted) return;
+
+  worldClickMove = false;
+  stopKeys();
+
+  e.preventDefault();
+}, { passive: false });
+
 worldEl.addEventListener("pointercancel", () => {
   worldPointerDown = false;
-  stopKeys();
+  if (!worldClickMove) stopKeys();
 }, { capture: true });
 
 const joy = document.getElementById("joy");
