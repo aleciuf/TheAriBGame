@@ -1,6 +1,31 @@
 const worldEl = document.getElementById("world");
 const sceneEl = document.getElementById("scene");
 
+/* config */
+
+const MAP_W = 2048;
+const MAP_H = 2048;
+
+const PLAYER_SIZE = 95;
+const SPEED = 320;
+const PROXIMITY = 70;
+
+const CAMERA_ZOOM = 1.1;
+
+const BG_IMAGE = "bg.png";
+const COLLISION_IMAGE = "collision.png";
+const CHARACTER_PATH = "characters/";
+
+const DEFAULT_NPC_SIZE = 70;
+
+const DEBUG_ENABLED = true;
+
+const ACTIVE_SPRITE_DELAY_SEC = 5;
+const MOVE_EPSILON_PX = 0.25;
+
+const INPUT_MOVE_EPSILON = 0.04;
+const INPUT_INTENT_EPSILON = 0.02;
+
 /* background music */
 
 const bgMusic = new Audio("music.mp3");
@@ -72,9 +97,20 @@ function playSfx(src) {
 const splashEl = document.getElementById("splash");
 let gameStarted = false;
 
-function startGameOnce() {
-  console.log("startGameOnce");
+function resetStillNearState() {
+  stillNearSeconds = 0;
+  lastNearId = null;
+  activeSpriteApplied = false;
+}
 
+function resetBubbleDelayState() {
+  bubbleDelaySeconds = 0;
+  bubbleShown = false;
+  bubbleDelayTarget = 0;
+  bubbleDelayActiveId = null;
+}
+
+function startGameOnce() {
   if (gameStarted) return;
   gameStarted = true;
 
@@ -94,14 +130,6 @@ function startGameOnce() {
   }
 }
 
-function startOnFirstUserGesture() {
-  startGameOnce();
-}
-
-window.addEventListener("pointerdown", startOnFirstUserGesture, { capture: true, passive: true, once: true });
-window.addEventListener("keydown", startOnFirstUserGesture, { capture: true, passive: true, once: true });
-
-
 if (splashEl) {
   splashEl.addEventListener("pointerdown", (e) => {
     startGameOnce();
@@ -116,50 +144,47 @@ if (splashEl) {
   });
 }
 
-const MAP_W = 2048;
-const MAP_H = 2048;
+/* small failsafe: first user gesture starts the game, regardless of overlays */
+window.addEventListener("pointerdown", () => startGameOnce(), { capture: true, passive: true, once: true });
+window.addEventListener("keydown", () => startGameOnce(), { capture: true, passive: true, once: true });
 
-const PLAYER_SIZE = 95;
-const SPEED = 320;
-const PROXIMITY = 70;
+/* helpers */
 
-const CAMERA_ZOOM = 1.1;
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
-const BG_IMAGE = "bg.png";
-const COLLISION_IMAGE = "collision.png";
-const CHARACTER_PATH = "characters/";
+function entitySrc(id) {
+  return `${CHARACTER_PATH}${id}.png`;
+}
 
-const DEFAULT_NPC_SIZE = 70;
-
-const DEBUG_ENABLED = true;
-
-const ACTIVE_SPRITE_DELAY_SEC = 5;
-const MOVE_EPSILON_PX = 0.25;
-
-const INPUT_MOVE_EPSILON = 0.04;
-const INPUT_INTENT_EPSILON = 0.02;
+function setPos(el, x, y, size) {
+  el.style.left = Math.round(x) + "px";
+  el.style.top = Math.round(y) + "px";
+  el.style.width = size + "px";
+  el.style.height = size + "px";
+}
 
 /* collision */
 
-const COLLISION_INSET = 3;
-const COLLISION_BLACK_MAX = 12;
-const COLLISION_HITS_TO_BLOCK = 2;
+let collisionEnabled = true;
 
 const collision = {
   ready: false,
-  w: MAP_W,
-  h: MAP_H,
-  ctx: null,
   imgData: null
 };
+
+const COLLISION_BLACK_MAX = 12;
+const COLLISION_FOOT_Y_INSET = 2;
 
 function initCollisionMap() {
   const img = new Image();
   img.src = COLLISION_IMAGE;
+
   img.onload = () => {
     const c = document.createElement("canvas");
     c.width = MAP_W;
     c.height = MAP_H;
+
     const ctx = c.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
@@ -167,13 +192,15 @@ function initCollisionMap() {
     ctx.clearRect(0, 0, c.width, c.height);
     ctx.drawImage(img, 0, 0, MAP_W, MAP_H);
 
-    collision.ctx = ctx;
     collision.imgData = ctx.getImageData(0, 0, MAP_W, MAP_H);
     collision.ready = true;
+
     relocatePlayerIfStuck();
   };
+
   img.onerror = () => {
     collision.ready = false;
+    collision.imgData = null;
   };
 }
 
@@ -196,37 +223,16 @@ function isWallAtPixel(px, py) {
   return r <= COLLISION_BLACK_MAX && g <= COLLISION_BLACK_MAX && b <= COLLISION_BLACK_MAX;
 }
 
-function collidesAtRect(x, y, size) {
-  const inset = COLLISION_INSET;
-
-  const left = x + inset;
-  const top = y + inset;
-  const right = x + size - inset;
-  const bottom = y + size - inset;
-
-  const midX = (left + right) / 2;
-  const midY = (top + bottom) / 2;
-
-  const pts = [
-    [left, top], [right, top], [left, bottom], [right, bottom],
-    [midX, top], [midX, bottom], [left, midY], [right, midY]
-  ];
-
-  let hits = 0;
-  for (const [px, py] of pts) {
-    if (isWallAtPixel(px, py)) {
-      hits++;
-      if (hits >= COLLISION_HITS_TO_BLOCK) return true;
-    }
-  }
-
-  return false;
+function collidesAtPlayerFoot(x, y, size) {
+  const footX = x + size / 2;
+  const footY = y + size - COLLISION_FOOT_Y_INSET;
+  return isWallAtPixel(footX, footY);
 }
 
 function relocatePlayerIfStuck() {
-  if (!collision.ready) return;
+  if (!collision.ready || !collisionEnabled) return;
 
-  if (!collidesAtRect(player.x, player.y, PLAYER_SIZE)) return;
+  if (!collidesAtPlayerFoot(player.x, player.y, PLAYER_SIZE)) return;
 
   const startX = Math.round(player.x);
   const startY = Math.round(player.y);
@@ -240,7 +246,7 @@ function relocatePlayerIfStuck() {
         const nx = clamp(startX + dx, 0, MAP_W - PLAYER_SIZE);
         const ny = clamp(startY + dy, 0, MAP_H - PLAYER_SIZE);
 
-        if (!collidesAtRect(nx, ny, PLAYER_SIZE)) {
+        if (!collidesAtPlayerFoot(nx, ny, PLAYER_SIZE)) {
           player.x = nx;
           player.y = ny;
           setPos(playerEnt.el, player.x, player.y, PLAYER_SIZE);
@@ -251,6 +257,8 @@ function relocatePlayerIfStuck() {
     }
   }
 }
+
+/* scene */
 
 sceneEl.style.width = MAP_W + "px";
 sceneEl.style.height = MAP_H + "px";
@@ -270,6 +278,8 @@ sceneEl.appendChild(bgImg);
 
 initCollisionMap();
 
+/* entities */
+
 const npcs = [
   { id: "character_1", x: 1125, y: 1663, size: 90, line: "A grafiko!!!" },
   { id: "character_2", x: 1155, y: 1713, size: 90, line: "Hai un goniometro?" },
@@ -287,23 +297,15 @@ const npcs = [
   { id: "character_x", x: 250, y: 850, size: 95, line: "bush( {<nullByte>} Auguri<Ari>! )", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
-const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
-const joyState = { x: 0, y: 0, mag: 0, intentMag: 0, active: false };
-
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
-
-function entitySrc(id) {
-  return `${CHARACTER_PATH}${id}.png`;
-}
-
 function createEntity({ id, x, y, size, baseImage, activeImage }) {
   const el = document.createElement("div");
   el.className = "entity";
+
   if (id !== "player") {
     el.classList.add("npc");
     el.style.setProperty("--bounce-delay", `${-(Math.random() * 1.2).toFixed(2)}s`);
   }
+
   el.dataset.id = id;
 
   const img = document.createElement("img");
@@ -327,12 +329,7 @@ function createEntity({ id, x, y, size, baseImage, activeImage }) {
   };
 }
 
-function setPos(el, x, y, size) {
-  el.style.left = Math.round(x) + "px";
-  el.style.top = Math.round(y) + "px";
-  el.style.width = size + "px";
-  el.style.height = size + "px";
-}
+/* bubbles */
 
 function ensureBubble(el, text) {
   let b = el.querySelector(".bubble");
@@ -353,6 +350,8 @@ function removeBubble(el) {
   if (b) b.remove();
 }
 
+/* build npcs + player */
+
 const npcEls = new Map();
 
 for (const n of npcs) {
@@ -362,6 +361,8 @@ for (const n of npcs) {
 
 const player = { x: MAP_W / 2, y: MAP_H / 2 };
 const playerEnt = createEntity({ id: "player", x: player.x, y: player.y, size: PLAYER_SIZE });
+
+/* npc activation state */
 
 let activeId = null;
 
@@ -373,13 +374,6 @@ let bubbleDelaySeconds = 0;
 let bubbleShown = false;
 let bubbleDelayTarget = 0;
 let bubbleDelayActiveId = null;
-
-function resetBubbleDelayState() {
-  bubbleDelaySeconds = 0;
-  bubbleShown = false;
-  bubbleDelayTarget = 0;
-  bubbleDelayActiveId = null;
-}
 
 function nearest() {
   let bestId = null;
@@ -396,17 +390,12 @@ function nearest() {
 
 function setNpcSpriteActive(ent, isActive) {
   if (!ent || !ent.img) return;
+
   if (isActive) {
     if (ent.activeSrc) ent.img.src = ent.activeSrc;
   } else {
     ent.img.src = ent.baseSrc;
   }
-}
-
-function resetStillNearState() {
-  stillNearSeconds = 0;
-  lastNearId = null;
-  activeSpriteApplied = false;
 }
 
 function setActive(id) {
@@ -448,41 +437,63 @@ function setActive(id) {
   if (n.sound) playSfx(n.sound);
 }
 
-function applyArrowStateFromKey(e, isDown) {
-  if (e.key in keys) { keys[e.key] = isDown; return true; }
-
-  const k = e.key.toLowerCase();
-  if (k === "w") { keys.ArrowUp = isDown; return true; }
-  if (k === "s") { keys.ArrowDown = isDown; return true; }
-  if (k === "a") { keys.ArrowLeft = isDown; return true; }
-  if (k === "d") { keys.ArrowRight = isDown; return true; }
-
-  return false;
-}
-
-window.addEventListener("keydown", (e) => {
-  if (!gameStarted) {
-    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
-      startGameOnce();
-      e.preventDefault();
-    }
+function updateNpcActiveSprite(dt, isPlayerMoving) {
+  if (!activeId) {
+    resetStillNearState();
     return;
   }
 
-  if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
-}, { passive: false });
+  const ent = npcEls.get(activeId);
+  if (!ent) {
+    resetStillNearState();
+    return;
+  }
 
-window.addEventListener("keyup", (e) => {
-  if (!gameStarted) return;
-  if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
-}, { passive: false });
+  if (!ent.activeSrc) {
+    resetStillNearState();
+    return;
+  }
 
-function stopKeys() {
-  keys.ArrowUp = false;
-  keys.ArrowDown = false;
-  keys.ArrowLeft = false;
-  keys.ArrowRight = false;
+  if (lastNearId !== activeId) {
+    stillNearSeconds = 0;
+    activeSpriteApplied = false;
+    lastNearId = activeId;
+    setNpcSpriteActive(ent, false);
+  }
+
+  if (isPlayerMoving) {
+    stillNearSeconds = 0;
+    activeSpriteApplied = false;
+    setNpcSpriteActive(ent, false);
+    return;
+  }
+
+  stillNearSeconds += dt;
+
+  if (!activeSpriteApplied && stillNearSeconds >= ACTIVE_SPRITE_DELAY_SEC) {
+    setNpcSpriteActive(ent, true);
+    activeSpriteApplied = true;
+  }
 }
+
+function updateNpcBubbleDelay(dt) {
+  if (!activeId) return;
+  if (bubbleShown) return;
+  if (bubbleDelayActiveId !== activeId) return;
+
+  const n = npcs.find(v => v.id === activeId);
+  const ent = npcEls.get(activeId);
+  if (!n || !ent) return;
+
+  bubbleDelaySeconds += dt;
+
+  if (bubbleDelaySeconds >= bubbleDelayTarget) {
+    ensureBubble(ent.el, n.line);
+    bubbleShown = true;
+  }
+}
+
+/* camera */
 
 function getCameraTransform() {
   const rect = worldEl.getBoundingClientRect();
@@ -510,6 +521,102 @@ function applyCamera() {
 
   sceneEl.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${cam.zoom})`;
 }
+
+/* input */
+
+const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+const joyState = { x: 0, y: 0, mag: 0, intentMag: 0, active: false };
+
+function stopKeys() {
+  keys.ArrowUp = false;
+  keys.ArrowDown = false;
+  keys.ArrowLeft = false;
+  keys.ArrowRight = false;
+}
+
+function isAnyKeyMoving() {
+  return !!(keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight);
+}
+
+function inputVector() {
+  let x = 0;
+  let y = 0;
+
+  if (keys.ArrowLeft) x -= 1;
+  if (keys.ArrowRight) x += 1;
+  if (keys.ArrowUp) y -= 1;
+  if (keys.ArrowDown) y += 1;
+
+  if (x || y) {
+    const len = Math.hypot(x, y) || 1;
+    return { x: x / len, y: y / len, mag: 1 };
+  }
+
+  if (joyState.mag <= 0) return { x: 0, y: 0, mag: 0 };
+  return { x: joyState.x, y: joyState.y, mag: joyState.mag };
+}
+
+/* keyboard: arrows + c + d */
+
+let debugVisible = false;
+let debugEl = null;
+
+function toggleDebugOverlay() {
+  if (!DEBUG_ENABLED) return;
+
+  debugVisible = !debugVisible;
+
+  if (!debugEl) {
+    debugEl = document.createElement("img");
+    debugEl.src = COLLISION_IMAGE;
+    debugEl.style.position = "absolute";
+    debugEl.style.left = "0";
+    debugEl.style.top = "0";
+    debugEl.style.width = MAP_W + "px";
+    debugEl.style.height = MAP_H + "px";
+    debugEl.style.opacity = "0.35";
+    debugEl.style.pointerEvents = "none";
+    debugEl.style.imageRendering = "pixelated";
+    sceneEl.appendChild(debugEl);
+  }
+
+  debugEl.style.display = debugVisible ? "block" : "none";
+}
+
+window.addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+
+  if (k === "c") {
+    collisionEnabled = !collisionEnabled;
+    if (collisionEnabled) relocatePlayerIfStuck();
+    e.preventDefault();
+    return;
+  }
+
+  if (k === "d") {
+    toggleDebugOverlay();
+    if (DEBUG_ENABLED) e.preventDefault();
+    return;
+  }
+
+  if (!gameStarted) {
+    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
+      startGameOnce();
+      e.preventDefault();
+      return;
+    }
+    return;
+  }
+
+  if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
+}, { passive: false });
+
+window.addEventListener("keyup", (e) => {
+  if (!gameStarted) return;
+  if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
+}, { passive: false });
+
+/* mouse/touch on world: hold-to-move */
 
 function setKeysFromPoint(clientX, clientY) {
   const rect = worldEl.getBoundingClientRect();
@@ -555,6 +662,8 @@ worldEl.addEventListener("pointercancel", () => {
   worldPointerDown = false;
   stopKeys();
 }, { capture: true });
+
+/* joystick */
 
 const joy = document.getElementById("joy");
 const joyKnob = document.getElementById("joyKnob");
@@ -657,129 +766,18 @@ if (joy && joyKnob) {
   });
 }
 
-let debugVisible = false;
-let debugEl = null;
-
-function toggleDebug() {
-  if (!DEBUG_ENABLED) return;
-
-  debugVisible = !debugVisible;
-
-  if (!debugEl) {
-    debugEl = document.createElement("img");
-    debugEl.src = COLLISION_IMAGE;
-    debugEl.style.position = "absolute";
-    debugEl.style.left = "0";
-    debugEl.style.top = "0";
-    debugEl.style.width = MAP_W + "px";
-    debugEl.style.height = MAP_H + "px";
-    debugEl.style.opacity = "0.35";
-    debugEl.style.pointerEvents = "none";
-    debugEl.style.imageRendering = "pixelated";
-    sceneEl.appendChild(debugEl);
-  }
-
-  debugEl.style.display = debugVisible ? "block" : "none";
-}
-
-let collisionEnabled = true;
-
-window.addEventListener("keydown", (e) => {
-  if (e.key.toLowerCase() !== "c") return;
-  collisionEnabled = !collisionEnabled;
-  console.log("collisionEnabled =", collisionEnabled);
-});
-
-window.addEventListener("keydown", (e) => {
-  if (!gameStarted) return;
-  if (e.key.toLowerCase() === "d") toggleDebug();
-});
+/* resize */
 
 window.addEventListener("resize", () => {
   sceneEl.style.width = MAP_W + "px";
   sceneEl.style.height = MAP_H + "px";
   bgImg.style.width = MAP_W + "px";
   bgImg.style.height = MAP_H + "px";
+
   applyCamera();
 });
 
-function updateNpcActiveSprite(dt, isPlayerMoving) {
-  if (!activeId) {
-    resetStillNearState();
-    return;
-  }
-
-  const ent = npcEls.get(activeId);
-  if (!ent) {
-    resetStillNearState();
-    return;
-  }
-
-  if (!ent.activeSrc) {
-    resetStillNearState();
-    return;
-  }
-
-  if (lastNearId !== activeId) {
-    stillNearSeconds = 0;
-    activeSpriteApplied = false;
-    lastNearId = activeId;
-    setNpcSpriteActive(ent, false);
-  }
-
-  if (isPlayerMoving) {
-    stillNearSeconds = 0;
-    activeSpriteApplied = false;
-    setNpcSpriteActive(ent, false);
-    return;
-  }
-
-  stillNearSeconds += dt;
-
-  if (!activeSpriteApplied && stillNearSeconds >= ACTIVE_SPRITE_DELAY_SEC) {
-    setNpcSpriteActive(ent, true);
-    activeSpriteApplied = true;
-  }
-}
-
-function updateNpcBubbleDelay(dt) {
-  if (!activeId) return;
-  if (bubbleShown) return;
-  if (bubbleDelayActiveId !== activeId) return;
-
-  const n = npcs.find(v => v.id === activeId);
-  const ent = npcEls.get(activeId);
-  if (!n || !ent) return;
-
-  bubbleDelaySeconds += dt;
-
-  if (bubbleDelaySeconds >= bubbleDelayTarget) {
-    ensureBubble(ent.el, n.line);
-    bubbleShown = true;
-  }
-}
-
-function inputVector() {
-  let x = 0;
-  let y = 0;
-
-  if (keys.ArrowLeft) x -= 1;
-  if (keys.ArrowRight) x += 1;
-  if (keys.ArrowUp) y -= 1;
-  if (keys.ArrowDown) y += 1;
-
-  if (x || y) {
-    const len = Math.hypot(x, y) || 1;
-    return { x: x / len, y: y / len, mag: 1 };
-  }
-
-  if (joyState.mag <= 0) return { x: 0, y: 0, mag: 0 };
-  return { x: joyState.x, y: joyState.y, mag: joyState.mag };
-}
-
-function isAnyKeyMoving() {
-  return !!(keys.ArrowUp || keys.ArrowDown || keys.ArrowLeft || keys.ArrowRight);
-}
+/* main loop */
 
 let last = performance.now();
 
@@ -800,11 +798,11 @@ function loop(t) {
   let nextY = clamp(player.y + stepY, 0, MAP_H - PLAYER_SIZE);
 
   if (collision.ready && collisionEnabled) {
-    if (!collidesAtRect(nextX, player.y, PLAYER_SIZE)) {
+    if (!collidesAtPlayerFoot(nextX, player.y, PLAYER_SIZE)) {
       player.x = nextX;
     }
 
-    if (!collidesAtRect(player.x, nextY, PLAYER_SIZE)) {
+    if (!collidesAtPlayerFoot(player.x, nextY, PLAYER_SIZE)) {
       player.y = nextY;
     }
   } else {
