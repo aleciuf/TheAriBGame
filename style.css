@@ -259,3 +259,57 @@ body {
   .title { font-size: 22px; }
   .subtitle { font-size: 22px; margin-top: 4px; }
 }
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #000;
+
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.splash__img {
+  max-width: 92vw;
+  max-height: 92svh;
+  width: auto;
+  height: auto;
+  display: block;
+
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.splash__hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  padding: 14px 20px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 20px;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.splash.hide {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}

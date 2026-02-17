@@ -5,7 +5,7 @@ const sceneEl = document.getElementById("scene");
 
 const bgMusic = new Audio("music.mp3");
 bgMusic.loop = true;
-bgMusic.volume = 1.0;
+bgMusic.volume = 0.5;
 bgMusic.preload = "auto";
 
 let musicStarted = false;
@@ -16,8 +16,38 @@ function startMusicOnce() {
   bgMusic.play().catch(() => { musicStarted = false; });
 }
 
-window.addEventListener("pointerdown", startMusicOnce, { once: true });
-window.addEventListener("keydown", startMusicOnce, { once: true });
+/* splash */
+
+const splashEl = document.getElementById("splash");
+let gameStarted = false;
+
+function startGameOnce() {
+  if (gameStarted) return;
+  gameStarted = true;
+
+  startMusicOnce();
+
+  if (splashEl) {
+    splashEl.classList.add("hide");
+    window.setTimeout(() => {
+      if (splashEl && splashEl.parentNode) splashEl.parentNode.removeChild(splashEl);
+    }, 240);
+  }
+}
+
+if (splashEl) {
+  splashEl.addEventListener("pointerdown", (e) => {
+    startGameOnce();
+    e.preventDefault();
+  }, { passive: false });
+
+  splashEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
+      startGameOnce();
+      e.preventDefault();
+    }
+  });
+}
 
 const MAP_W = 2048;
 const MAP_H = 2048;
@@ -64,7 +94,7 @@ const npcs = [
   { id: "character_3", x: 396, y: 1674, size: 90, line: "............", activeImage: "character_3_b.png" },
   { id: "character_4", x: 441, y: 1639, size: 90, line: "Sto cazzo de grafiko" },
   { id: "character_5", x: 769, y: 1764, size: 90, line: "Miao." },
-  { id: "character_6", x: 774, y: 1684, size: 90, line: "A grafiko!!!" },
+  { id: "character_6", x: 774, y: 1684, size: 75, line: "A grafiko!!!" },
   { id: "character_7", x: 1308, y: 1143, size: 90, line: "Hai un goniometro?" },
   { id: "character_8", x: 1362, y: 1105, size: 90, line: "............" },
   { id: "character_9", x: 396, y: 251, size: 90, line: "Sto cazzo de grafiko" },
@@ -215,10 +245,19 @@ function setActive(id) {
 }
 
 window.addEventListener("keydown", (e) => {
+  if (!gameStarted) {
+    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
+      startGameOnce();
+      e.preventDefault();
+    }
+    return;
+  }
+
   if (e.key in keys) { keys[e.key] = true; e.preventDefault(); }
 }, { passive: false });
 
 window.addEventListener("keyup", (e) => {
+  if (!gameStarted) return;
   if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
 }, { passive: false });
 
@@ -275,18 +314,21 @@ function setKeysFromPoint(clientX, clientY) {
 let worldPointerDown = false;
 
 worldEl.addEventListener("pointerdown", (e) => {
+  if (!gameStarted) return;
   worldPointerDown = true;
   setKeysFromPoint(e.clientX, e.clientY);
   e.preventDefault();
 }, { passive: false, capture: true });
 
 worldEl.addEventListener("pointermove", (e) => {
+  if (!gameStarted) return;
   if (!worldPointerDown) return;
   setKeysFromPoint(e.clientX, e.clientY);
   e.preventDefault();
 }, { passive: false, capture: true });
 
 worldEl.addEventListener("pointerup", (e) => {
+  if (!gameStarted) return;
   worldPointerDown = false;
   stopKeys();
   e.preventDefault();
@@ -369,6 +411,12 @@ if (joy && joyKnob) {
   }
 
   joy.addEventListener("pointerdown", (e) => {
+    if (!gameStarted) {
+      startGameOnce();
+      e.preventDefault();
+      return;
+    }
+
     joyActive = true;
     joyState.active = true;
     joy.setPointerCapture(e.pointerId);
@@ -377,12 +425,14 @@ if (joy && joyKnob) {
   }, { passive: false });
 
   joy.addEventListener("pointermove", (e) => {
+    if (!gameStarted) return;
     if (!joyActive) return;
     applyJoyFromPointer(e.clientX, e.clientY);
     e.preventDefault();
   }, { passive: false });
 
   joy.addEventListener("pointerup", (e) => {
+    if (!gameStarted) return;
     joyActive = false;
     resetJoy();
     e.preventDefault();
@@ -420,6 +470,7 @@ function toggleDebug() {
 }
 
 window.addEventListener("keydown", (e) => {
+  if (!gameStarted) return;
   if (e.key.toLowerCase() === "d") toggleDebug();
 });
 
@@ -498,7 +549,7 @@ function loop(t) {
   const dt = Math.min(0.05, (t - last) / 1000);
   last = t;
 
-  const v = inputVector();
+  const v = gameStarted ? inputVector() : { x: 0, y: 0, mag: 0 };
   const speed = SPEED * v.mag;
 
   const stepX = v.x * speed * dt;
