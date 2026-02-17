@@ -157,7 +157,7 @@ const npcs = [
   { id: "character_11", x: 949, y: 656, size: 90, line: "Hai un goniometro?" },
   { id: "character_12", x: 952, y: 489, size: 90, line: "............" },
   { id: "character_13", x: 877, y: 471, size: 90, line: "Sto cazzo de grafiko" },
-  { id: "character_x", x: 250, y: 850, size: 95, line: "<bush {<nullByte>} Auguri<Ari>! ></bush>", sound: "character_x_sfx.mp3", delay: 1.7 }
+  { id: "character_x", x: 250, y: 850, size: 95, line: "bush( {<nullByte>} Auguri<Ari>! )", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
 const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
