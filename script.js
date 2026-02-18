@@ -19,7 +19,7 @@ const CHARACTER_PATH = "characters/";
 
 const DEFAULT_NPC_SIZE = 70;
 
-const DEBUG_ENABLED = true;
+const DEBUG_ENABLED = false;
 
 const ACTIVE_SPRITE_DELAY_SEC = 5;
 const MOVE_EPSILON_PX = 0.25;
@@ -441,8 +441,8 @@ initCollisionMap();
 const npcs = [
   { id: "character_1", x: 1125, y: 1663, size: 90, line: "A grafiko!!!" },
   { id: "character_2", x: 1155, y: 1713, size: 90, line: "Hai un goniometro?" },
-  { id: "character_3", x: 396, y: 1674, size: 90, line: "............", activeImage: "character_3_b.png" },
-  { id: "character_4", x: 441, y: 1639, size: 90, line: "Sto cazzo de grafiko" },
+  { id: "character_3", x: 470, y: 1674, size: 90, line: "............", activeImage: "character_3_b.png" },
+  { id: "character_4", x: 510, y: 1639, size: 90, line: "Sto cazzo de grafiko" },
   { id: "character_5", x: 769, y: 1764, size: 90, line: "Miao." },
   { id: "character_6", x: 774, y: 1684, size: 75, line: "A grafiko!!!" },
   { id: "character_7", x: 1308, y: 1143, size: 90, line: "Hai un goniometro?" },
@@ -745,6 +745,8 @@ window.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
 
   if (k === "c") {
+    if (!DEBUG_ENABLED) return;
+
     collisionEnabled = !collisionEnabled;
     if (collisionEnabled) relocatePlayerIfStuck();
     e.preventDefault();
@@ -754,15 +756,6 @@ window.addEventListener("keydown", (e) => {
   if (k === "d") {
     toggleDebugOverlay();
     if (DEBUG_ENABLED) e.preventDefault();
-    return;
-  }
-
-  if (!gameStarted) {
-    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
-      startGameOnce();
-      e.preventDefault();
-      return;
-    }
     return;
   }
 

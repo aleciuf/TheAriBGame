@@ -127,7 +127,15 @@ body {
   display: grid;
   place-items: center;
   user-select: none;
-  z-index: 20;
+  z-index: 10;
+}
+
+.entity[data-id="player"] {
+  z-index: 30;
+}
+
+.entity.npc {
+  z-index: 60;
 }
 
 .entity__fx {
@@ -142,7 +150,7 @@ body {
 
 .entity.active {
   transform: scale(1.2);
-  z-index: 50;
+  z-index: 80;
 }
 
 .entity img {
