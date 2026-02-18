@@ -240,8 +240,6 @@ function unlockSfxOnce() {
   }
 }
 
-/* start gate: tap OR enter/space -> start audio + show splash */
-
 function startAudioAndShowSplash() {
   if (!isGateVisible()) return;
 
@@ -272,8 +270,6 @@ if (startGateEl) {
   }, { passive: false });
 }
 
-/* splash: tap OR enter/space -> start game */
-
 function resetStillNearState() {
   stillNearSeconds = 0;
   lastNearId = null;
@@ -292,7 +288,7 @@ function startGameOnce() {
   gameStarted = true;
 
   stopKeys();
-  
+
   activeId = null;
   resetStillNearState();
   resetBubbleDelayState();
