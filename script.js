@@ -287,6 +287,11 @@ function startGameOnce() {
   if (gameStarted) return;
   gameStarted = true;
 
+  if (npcCounterEl) {
+    npcCounterEl.style.display = "block";
+    updateNpcCounter();
+  }
+
   stopKeys();
 
   activeId = null;
@@ -566,6 +571,16 @@ function removeBubble(el) {
 /* build npcs + player */
 
 const npcEls = new Map();
+const npcCounterEl = document.getElementById("npcCounter");
+
+const totalNpcCount = npcs.length;
+const metNpcIds = new Set();
+let remainingNpcCount = totalNpcCount;
+
+function updateNpcCounter() {
+  if (!npcCounterEl) return;
+  npcCounterEl.textContent = `x ${remainingNpcCount}`;
+}
 
 for (const n of npcs) {
   const size = n.size ?? DEFAULT_NPC_SIZE;
@@ -574,6 +589,8 @@ for (const n of npcs) {
 
 const player = { x: MAP_W / 2, y: MAP_H / 2 };
 const playerEnt = createEntity({ id: "player", x: player.x, y: player.y, size: PLAYER_SIZE });
+
+updateNpcCounter();
 
 /* npc activation state */
 
@@ -643,8 +660,14 @@ function setActive(id) {
   bubbleDelayActiveId = id;
 
   if (bubbleDelayTarget <= 0) {
-    ensureBubble(ent.el, n.line);
-    bubbleShown = true;
+  ensureBubble(ent.el, n.line);
+  bubbleShown = true;
+
+    if (!metNpcIds.has(id)) {
+      metNpcIds.add(id);
+      remainingNpcCount = Math.max(0, totalNpcCount - metNpcIds.size);
+      updateNpcCounter();
+    }
   }
 
   if (n.sound) playSfx(n.sound);
@@ -701,8 +724,14 @@ function updateNpcBubbleDelay(dt) {
   bubbleDelaySeconds += dt;
 
   if (bubbleDelaySeconds >= bubbleDelayTarget) {
-    ensureBubble(ent.el, n.line);
-    bubbleShown = true;
+  ensureBubble(ent.el, n.line);
+  bubbleShown = true;
+
+    if (!metNpcIds.has(activeId)) {
+      metNpcIds.add(activeId);
+      remainingNpcCount = Math.max(0, totalNpcCount - metNpcIds.size);
+      updateNpcCounter();
+    }
   }
 }
 
