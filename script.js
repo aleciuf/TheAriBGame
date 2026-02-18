@@ -13,6 +13,7 @@ const PROXIMITY = 70;
 const CAMERA_ZOOM = 1.1;
 
 const BG_IMAGE = "bg.png";
+const FG_IMAGE = "fg.png";
 const COLLISION_IMAGE = "collision.png";
 const CHARACTER_PATH = "characters/";
 
@@ -28,23 +29,122 @@ const INPUT_INTENT_EPSILON = 0.02;
 
 /* background music */
 
-const bgMusic = new Audio("music.mp3");
+const MUSIC_VOLUME = 0.5;
+const MUSIC_SOURCES = ["music.m4a", "music.mp3"];
+
+const bgMusic = new Audio();
 bgMusic.loop = true;
-bgMusic.volume = 0.5;
 bgMusic.preload = "auto";
+bgMusic.playsInline = true;
+bgMusic.volume = MUSIC_VOLUME;
 
 let musicStarted = false;
+let musicSrcIndex = 0;
+let musicTriedAll = false;
+let audioCtx = null;
+let musicGain = null;
+let musicNode = null;
 
-function startMusicOnce() {
+function pickInitialMusicIndex() {
+  const canM4A = !!bgMusic.canPlayType("audio/mp4; codecs=mp4a.40.2");
+  return canM4A ? 0 : 1;
+}
+
+function setMusicSrcByIndex(i) {
+  musicSrcIndex = Math.max(0, Math.min(MUSIC_SOURCES.length - 1, i));
+  bgMusic.src = MUSIC_SOURCES[musicSrcIndex];
+}
+
+async function startMusicWebAudioFallback() {
+  if (!window.AudioContext && !window.webkitAudioContext) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") {
+    try { await audioCtx.resume(); } catch { return; }
+  }
+
+  const preferred = MUSIC_SOURCES.includes("music.mp3") ? "music.mp3" : MUSIC_SOURCES[0];
+
+  let buf;
+  try {
+    const res = await fetch(preferred, { cache: "force-cache" });
+    const arr = await res.arrayBuffer();
+    buf = await audioCtx.decodeAudioData(arr);
+  } catch {
+    return;
+  }
+
+  if (!musicGain) {
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = MUSIC_VOLUME;
+    musicGain.connect(audioCtx.destination);
+  }
+
+  if (musicNode) {
+    try { musicNode.stop(); } catch { /* ignore */ }
+    musicNode = null;
+  }
+
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  src.connect(musicGain);
+  src.start(0);
+  musicNode = src;
+}
+
+async function startMusicOnce() {
   if (musicStarted) return;
   musicStarted = true;
-  bgMusic.play().catch(() => { musicStarted = false; });
+  musicTriedAll = false;
+
+  setMusicSrcByIndex(pickInitialMusicIndex());
+
+  try {
+    bgMusic.muted = false;
+    bgMusic.load();
+    await bgMusic.play();
+    return;
+  } catch {
+    /* ignore */
+  }
+
+  for (let tries = 0; tries < MUSIC_SOURCES.length; tries += 1) {
+    const idx = (musicSrcIndex + tries) % MUSIC_SOURCES.length;
+    setMusicSrcByIndex(idx);
+
+    try {
+      bgMusic.muted = false;
+      bgMusic.load();
+      await bgMusic.play();
+      return;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  musicTriedAll = true;
+  await startMusicWebAudioFallback();
 }
+
+bgMusic.addEventListener("error", () => {
+  if (!gameStarted) return;
+  if (!musicStarted) return;
+  if (musicTriedAll) return;
+
+  const next = (musicSrcIndex + 1) % MUSIC_SOURCES.length;
+  setMusicSrcByIndex(next);
+  bgMusic.load();
+  bgMusic.play().catch(async () => {
+    musicTriedAll = true;
+    await startMusicWebAudioFallback();
+  });
+});
 
 /* sfx */
 
 const SFX_VOLUME = 0.85;
 const sfxCache = new Map();
+let sfxUnlocked = false;
 
 function normalizePath(p) {
   return String(p || "").replaceAll("\\", "/");
@@ -92,6 +192,36 @@ function playSfx(src) {
   }
 }
 
+function preloadNpcSfx() {
+  for (const n of npcs) {
+    if (!n.sound) continue;
+    const resolved = resolveNpcSoundPath(n.sound);
+    if (!resolved) continue;
+    getSfx(resolved);
+  }
+}
+
+function unlockSfxOnce() {
+  if (sfxUnlocked) return;
+  sfxUnlocked = true;
+
+  for (const a of sfxCache.values()) {
+    try {
+      const prevVol = a.volume;
+      a.volume = 0;
+      a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+        a.volume = prevVol;
+      }).catch(() => {
+        a.volume = prevVol;
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 /* splash */
 
 const splashEl = document.getElementById("splash");
@@ -117,6 +247,11 @@ function startGameOnce() {
   activeId = null;
   resetStillNearState();
   resetBubbleDelayState();
+
+  Promise.resolve().then(() => {
+    preloadNpcSfx();
+    unlockSfxOnce();
+  });
 
   startMusicOnce();
 
@@ -146,7 +281,14 @@ if (splashEl) {
 
 /* small failsafe: first user gesture starts the game, regardless of overlays */
 window.addEventListener("pointerdown", () => startGameOnce(), { capture: true, passive: true, once: true });
+window.addEventListener("touchstart", () => startGameOnce(), { capture: true, passive: true, once: true });
 window.addEventListener("keydown", () => startGameOnce(), { capture: true, passive: true, once: true });
+
+document.addEventListener("visibilitychange", () => {
+  if (!gameStarted) return;
+  if (document.visibilityState !== "visible") return;
+  startMusicOnce();
+});
 
 /* helpers */
 
@@ -274,7 +416,23 @@ bgImg.style.top = "0";
 bgImg.style.width = MAP_W + "px";
 bgImg.style.height = MAP_H + "px";
 bgImg.style.pointerEvents = "none";
+bgImg.style.zIndex = "0";
 sceneEl.appendChild(bgImg);
+
+const fgImg = document.createElement("img");
+fgImg.className = "fg";
+fgImg.src = FG_IMAGE;
+fgImg.alt = "";
+fgImg.draggable = false;
+fgImg.style.position = "absolute";
+fgImg.style.left = "0";
+fgImg.style.top = "0";
+fgImg.style.width = MAP_W + "px";
+fgImg.style.height = MAP_H + "px";
+fgImg.style.pointerEvents = "none";
+fgImg.style.zIndex = "40";
+fgImg.onerror = () => { fgImg.style.display = "none"; };
+sceneEl.appendChild(fgImg);
 
 initCollisionMap();
 
@@ -294,7 +452,7 @@ const npcs = [
   { id: "character_11", x: 949, y: 656, size: 90, line: "Hai un goniometro?" },
   { id: "character_12", x: 952, y: 489, size: 90, line: "............" },
   { id: "character_13", x: 877, y: 471, size: 90, line: "Sto cazzo de grafiko" },
-  { id: "character_x", x: 250, y: 850, size: 95, line: "bush( {<nullByte>} Auguri<Ari>! )", sound: "character_x_sfx.mp3", delay: 1.7 }
+  { id: "character_x", x: 250, y: 850, size: 60, line: "bush( {<nullByte>} Auguri<Ari>! )", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
 function createEntity({ id, x, y, size, baseImage, activeImage }) {
@@ -773,6 +931,7 @@ window.addEventListener("resize", () => {
   sceneEl.style.height = MAP_H + "px";
   bgImg.style.width = MAP_W + "px";
   bgImg.style.height = MAP_H + "px";
+  if (typeof fgImg !== "undefined" && fgImg) { fgImg.style.width = MAP_W + "px"; fgImg.style.height = MAP_H + "px"; }
 
   applyCamera();
 });

@@ -109,12 +109,25 @@ body {
   transform-origin: 0 0;
 }
 
+.bg,
+.fg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.bg { z-index: 0; }
+.fg { z-index: 40; }
+
 .entity {
   position: absolute;
   display: grid;
   place-items: center;
   user-select: none;
-  z-index: 2;
+  z-index: 20;
 }
 
 .entity__fx {
