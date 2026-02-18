@@ -27,6 +27,20 @@ const MOVE_EPSILON_PX = 0.25;
 const INPUT_MOVE_EPSILON = 0.04;
 const INPUT_INTENT_EPSILON = 0.02;
 
+/* ui: start gate + splash */
+
+const startGateEl = document.getElementById("startGate");
+const splashEl = document.getElementById("splash");
+if (splashEl) splashEl.hidden = true;
+
+function isGateVisible() {
+  return !!(startGateEl && !startGateEl.classList.contains("hidden"));
+}
+
+function isSplashVisible() {
+  return !!(splashEl && !splashEl.hidden);
+}
+
 /* background music */
 
 const MUSIC_VOLUME = 0.5;
@@ -126,6 +140,8 @@ async function startMusicOnce() {
   await startMusicWebAudioFallback();
 }
 
+let gameStarted = false;
+
 bgMusic.addEventListener("error", () => {
   if (!gameStarted) return;
   if (!musicStarted) return;
@@ -224,11 +240,12 @@ function unlockSfxOnce() {
   }
 }
 
-/* start gate */
-
-const startGateEl = document.getElementById("startGate");
+/* start gate: tap OR enter/space -> start audio + show splash */
 
 function startAudioAndShowSplash() {
+  if (!isGateVisible()) return;
+
+  stopKeys();
   unlockSfxOnce();
 
   bgMusic.muted = false;
@@ -240,7 +257,12 @@ function startAudioAndShowSplash() {
   if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
 
   if (startGateEl) startGateEl.classList.add("hidden");
-  if (splashEl) splashEl.hidden = false;
+
+  if (splashEl) {
+    splashEl.hidden = false;
+    splashEl.setAttribute("tabindex", "0");
+    splashEl.focus({ preventScroll: true });
+  }
 }
 
 if (startGateEl) {
@@ -248,20 +270,9 @@ if (startGateEl) {
     startAudioAndShowSplash();
     e.preventDefault();
   }, { passive: false });
-
-  startGateEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
-      startAudioAndShowSplash();
-      e.preventDefault();
-    }
-  });
 }
 
-/* splash */
-
-const splashEl = document.getElementById("splash");
-if (splashEl) splashEl.hidden = true;
-let gameStarted = false;
+/* splash: tap OR enter/space -> start game */
 
 function resetStillNearState() {
   stillNearSeconds = 0;
@@ -280,6 +291,8 @@ function startGameOnce() {
   if (gameStarted) return;
   gameStarted = true;
 
+  stopKeys();
+  
   activeId = null;
   resetStillNearState();
   resetBubbleDelayState();
@@ -307,19 +320,26 @@ if (splashEl) {
     startGameOnce();
     e.preventDefault();
   }, { passive: false });
-
-  splashEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
-      startGameOnce();
-      e.preventDefault();
-    }
-  });
 }
 
-/* small failsafe: first user gesture starts the game, regardless of overlays */
-window.addEventListener("pointerdown", () => startAudioAndShowSplash(), { capture: true, passive: true, once: true });
-window.addEventListener("touchstart", () => startAudioAndShowSplash(), { capture: true, passive: true, once: true });
-window.addEventListener("keydown", () => startAudioAndShowSplash(), { capture: true, passive: true, once: true });
+/* keyboard routing (single place, no doppioni) */
+
+window.addEventListener("keydown", (e) => {
+  const isEnter = e.key === "Enter";
+  const isSpace = e.key === " " || e.code === "Space";
+
+  if ((isEnter || isSpace) && isGateVisible()) {
+    startAudioAndShowSplash();
+    e.preventDefault();
+    return;
+  }
+
+  if ((isEnter || isSpace) && isSplashVisible()) {
+    startGameOnce();
+    e.preventDefault();
+    return;
+  }
+}, { capture: true });
 
 document.addEventListener("visibilitychange", () => {
   if (!gameStarted) return;
@@ -489,6 +509,7 @@ const npcs = [
   { id: "character_11", x: 949, y: 656, size: 90, line: "Hai un goniometro?" },
   { id: "character_12", x: 952, y: 489, size: 90, line: "............" },
   { id: "character_13", x: 877, y: 471, size: 90, line: "Sto cazzo de grafiko" },
+  { id: "character_14", x: 220, y: 300, size: 75, line: "?!?!??!11?!?!?!1?!?!" },
   { id: "character_x", x: 250, y: 850, size: 60, line: "bush( {<nullByte>} Auguri<Ari>! )", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
@@ -800,7 +821,6 @@ window.addEventListener("keydown", (e) => {
 }, { passive: false });
 
 window.addEventListener("keyup", (e) => {
-  if (!gameStarted) return;
   if (e.key in keys) { keys[e.key] = false; e.preventDefault(); }
 }, { passive: false });
 
