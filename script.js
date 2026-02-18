@@ -224,9 +224,43 @@ function unlockSfxOnce() {
   }
 }
 
+/* start gate */
+
+const startGateEl = document.getElementById("startGate");
+
+function startAudioAndShowSplash() {
+  unlockSfxOnce();
+
+  bgMusic.muted = false;
+  bgMusic.volume = MUSIC_VOLUME;
+  bgMusic.playsInline = true;
+
+  startMusicOnce();
+
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+
+  if (startGateEl) startGateEl.classList.add("hidden");
+  if (splashEl) splashEl.hidden = false;
+}
+
+if (startGateEl) {
+  startGateEl.addEventListener("pointerdown", (e) => {
+    startAudioAndShowSplash();
+    e.preventDefault();
+  }, { passive: false });
+
+  startGateEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " " || e.code === "Space") {
+      startAudioAndShowSplash();
+      e.preventDefault();
+    }
+  });
+}
+
 /* splash */
 
 const splashEl = document.getElementById("splash");
+if (splashEl) splashEl.hidden = true;
 let gameStarted = false;
 
 function resetStillNearState() {
@@ -283,9 +317,9 @@ if (splashEl) {
 }
 
 /* small failsafe: first user gesture starts the game, regardless of overlays */
-window.addEventListener("pointerdown", () => startGameOnce(), { capture: true, passive: true, once: true });
-window.addEventListener("touchstart", () => startGameOnce(), { capture: true, passive: true, once: true });
-window.addEventListener("keydown", () => startGameOnce(), { capture: true, passive: true, once: true });
+window.addEventListener("pointerdown", () => startAudioAndShowSplash(), { capture: true, passive: true, once: true });
+window.addEventListener("touchstart", () => startAudioAndShowSplash(), { capture: true, passive: true, once: true });
+window.addEventListener("keydown", () => startAudioAndShowSplash(), { capture: true, passive: true, once: true });
 
 document.addEventListener("visibilitychange", () => {
   if (!gameStarted) return;
