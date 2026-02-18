@@ -43,7 +43,7 @@ function isSplashVisible() {
 
 /* background music */
 
-const MUSIC_VOLUME = 0.5;
+const MUSIC_VOLUME = 0.7;
 const MUSIC_SOURCES = ["music.m4a", "music.mp3"];
 
 const bgMusic = new Audio();
@@ -158,7 +158,7 @@ bgMusic.addEventListener("error", () => {
 
 /* sfx */
 
-const SFX_VOLUME = 0.85;
+const SFX_VOLUME = 1.0;
 const sfxCache = new Map();
 let sfxUnlocked = false;
 
