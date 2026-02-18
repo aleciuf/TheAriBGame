@@ -201,24 +201,26 @@ function preloadNpcSfx() {
   }
 }
 
+let unlockAudio = null;
+
 function unlockSfxOnce() {
   if (sfxUnlocked) return;
   sfxUnlocked = true;
 
-  for (const a of sfxCache.values()) {
-    try {
-      const prevVol = a.volume;
-      a.volume = 0;
-      a.play().then(() => {
-        a.pause();
-        a.currentTime = 0;
-        a.volume = prevVol;
-      }).catch(() => {
-        a.volume = prevVol;
-      });
-    } catch {
-      /* ignore */
-    }
+  if (!unlockAudio) {
+    unlockAudio = new Audio("data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAA==");
+    unlockAudio.preload = "auto";
+    unlockAudio.volume = 0;
+  }
+
+  try {
+    unlockAudio.currentTime = 0;
+    unlockAudio.play().then(() => {
+      unlockAudio.pause();
+      unlockAudio.currentTime = 0;
+    }).catch(() => {});
+  } catch {
+    /* ignore */
   }
 }
 
@@ -248,9 +250,10 @@ function startGameOnce() {
   resetStillNearState();
   resetBubbleDelayState();
 
+  unlockSfxOnce();
+
   Promise.resolve().then(() => {
     preloadNpcSfx();
-    unlockSfxOnce();
   });
 
   startMusicOnce();
