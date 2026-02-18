@@ -506,6 +506,7 @@ const npcs = [
   { id: "character_12", x: 952, y: 489, size: 90, line: "............" },
   { id: "character_13", x: 877, y: 471, size: 90, line: "Sto cazzo de grafiko" },
   { id: "character_14", x: 220, y: 300, size: 75, line: "?!?!??!11?!?!?!1?!?!" },
+  { id: "character_15", x: 1670, y: 1155, size: 80, line: "Sono una foca! Ma sembro un sasso." },
   { id: "character_x", x: 250, y: 850, size: 60, line: "bush( {<nullByte>} Auguri<Ari>! )", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
