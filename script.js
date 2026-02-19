@@ -497,7 +497,7 @@ initCollisionMap();
 /* entities */
 
 const npcs = [
-  { id: "character_1", x: 1125, y: 1663, size: 90, line: "Max: Possiamo ufficialmente dare il via ad una nuova era di biglietti stupidi. Sia benedetta l'IA `<e i (forti) programmatori di buon cuore>` Auguri vecchio ❤️" },
+  { id: "character_1", x: 1125, y: 1663, size: 90, line: "Max: Possiamo ufficialmente dare il via ad una nuova era di biglietti stupidi. Sia benedetta l'IA `<e i (forti) programmatori di buon cuore>`. Auguri vecchio ❤️" },
   { id: "character_2", x: 1155, y: 1713, size: 90, line: "Hai un goniometro?" },
   { id: "character_3", x: 470, y: 1674, size: 90, line: "............", activeImage: "character_3_b.png" },
   { id: "character_4", x: 510, y: 1639, size: 90, line: "Sto cazzo de grafiko" },

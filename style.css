@@ -310,7 +310,7 @@ body {
   border-radius:7px;
   font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size:0.95em;
-  white-space:nowrap;
+  white-space: normal;
 }
 
 .bubble__tail {
