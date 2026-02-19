@@ -302,6 +302,17 @@ body {
   box-shadow: 0 10px 24px rgba(0,0,0,0.22);
 }
 
+.bubble__box code{
+  color:#777676;
+  background:#e8eefc;
+  border:1px solid rgba(11,18,32,0.30);
+  padding:2px 6px;
+  border-radius:7px;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size:0.95em;
+  white-space:nowrap;
+}
+
 .bubble__tail {
   width: 0;
   height: 0;

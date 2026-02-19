@@ -497,22 +497,22 @@ initCollisionMap();
 /* entities */
 
 const npcs = [
-  { id: "character_1", x: 1125, y: 1663, size: 90, line: "A grafiko!!!" },
+  { id: "character_1", x: 1125, y: 1663, size: 90, line: "Max: Possiamo ufficialmente dare il via ad una nuova era di biglietti stupidi. Sia benedetta l'IA `<e i (forti) programmatori di buon cuore>` Auguri vecchio ❤️" },
   { id: "character_2", x: 1155, y: 1713, size: 90, line: "Hai un goniometro?" },
   { id: "character_3", x: 470, y: 1674, size: 90, line: "............", activeImage: "character_3_b.png" },
   { id: "character_4", x: 510, y: 1639, size: 90, line: "Sto cazzo de grafiko" },
   { id: "character_5", x: 769, y: 1764, size: 90, line: "Miao." },
   { id: "character_6", x: 774, y: 1684, size: 75, line: "A grafiko!!!" },
-  { id: "character_7", x: 1308, y: 1143, size: 90, line: "Hai un goniometro?" },
+  { id: "character_7", x: 1308, y: 1143, size: 90, line: "............." },
   { id: "character_8", x: 1362, y: 1105, size: 90, line: "............" },
-  { id: "character_9", x: 396, y: 251, size: 90, line: "Sto cazzo de grafiko" },
-  { id: "character_10", x: 866, y: 668, size: 90, line: "Miao." },
-  { id: "character_11", x: 949, y: 656, size: 90, line: "Hai un goniometro?" },
+  { id: "character_9", x: 396, y: 251, size: 90, line: "............." },
+  { id: "character_10", x: 866, y: 668, size: 90, line: "........." },
+  { id: "character_11", x: 949, y: 656, size: 90, line: "............" },
   { id: "character_12", x: 952, y: 489, size: 90, line: "............" },
-  { id: "character_13", x: 877, y: 471, size: 90, line: "Sto cazzo de grafiko" },
+  { id: "character_13", x: 877, y: 471, size: 90, line: "..............." },
   { id: "character_14", x: 220, y: 300, size: 75, line: "?!?!??!11?!?!?!1?!?!" },
-  { id: "character_15", x: 1670, y: 1155, size: 80, line: "Sono una foca! Ma sembro un sasso." },
-  { id: "character_x", x: 250, y: 850, size: 60, line: "bush( {<nullByte>} Auguri<Ari>! )", sound: "character_x_sfx.mp3", delay: 1.7 }
+  { id: "character_15", x: 1670, y: 1155, size: 80, line: ".................." },
+  { id: "character_x", x: 250, y: 850, size: 60, line: "`bush( {<nullByte>} Auguri<Ari>! )`", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
 function createEntity({ id, x, y, size, baseImage, activeImage }) {
@@ -549,6 +549,26 @@ function createEntity({ id, x, y, size, baseImage, activeImage }) {
 
 /* bubbles */
 
+function setBubbleRichText(box, text) {
+  box.textContent = "";
+
+  const s = String(text ?? "");
+  const parts = s.split("`");
+
+  for (let i = 0; i < parts.length; i += 1) {
+    const chunk = parts[i];
+    if (!chunk) continue;
+
+    if (i % 2 === 1) {
+      const codeEl = document.createElement("code");
+      codeEl.textContent = chunk;
+      box.appendChild(codeEl);
+    } else {
+      box.appendChild(document.createTextNode(chunk));
+    }
+  }
+}
+
 function ensureBubble(el, text) {
   let b = el.querySelector(".bubble");
 
@@ -560,7 +580,13 @@ function ensureBubble(el, text) {
   }
 
   const box = b.querySelector(".bubble__box");
-  if (box) box.textContent = text;
+  if (box) {
+    if (String(text ?? "").includes("`")) {
+      setBubbleRichText(box, text);
+    } else {
+      box.textContent = text;
+    }
+  }
 }
 
 function removeBubble(el) {
