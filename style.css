@@ -298,7 +298,7 @@ body {
   font-size: 13px;
   line-height: 1.35;
   white-space: normal;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   box-shadow: 0 10px 24px rgba(0,0,0,0.22);
 }
 
