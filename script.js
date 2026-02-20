@@ -497,21 +497,21 @@ initCollisionMap();
 /* entities */
 
 const npcs = [
-  { id: "character_1", x: 1125, y: 1663, size: 90, line: "Max: Possiamo ufficialmente dare il via ad una nuova era di biglietti stupidi. Sia benedetta l'IA <e i `forti` programmatori di buon cuore>. Auguri vecchio ❤️" },
-  { id: "character_2", x: 1155, y: 1713, size: 90, line: "Hai un goniometro?" },
-  { id: "character_3", x: 470, y: 1674, size: 90, line: "............", activeImage: "character_3_b.png" },
-  { id: "character_4", x: 510, y: 1639, size: 90, line: "Sto cazzo de grafiko" },
-  { id: "character_5", x: 769, y: 1764, size: 90, line: "Miao." },
-  { id: "character_6", x: 774, y: 1684, size: 75, line: "A grafiko!!!" },
-  { id: "character_7", x: 1308, y: 1143, size: 90, line: "............." },
-  { id: "character_8", x: 1362, y: 1105, size: 90, line: "............" },
-  { id: "character_9", x: 396, y: 251, size: 90, line: "............." },
-  { id: "character_10", x: 866, y: 668, size: 90, line: "........." },
-  { id: "character_11", x: 949, y: 656, size: 90, line: "............" },
-  { id: "character_12", x: 952, y: 489, size: 90, line: "............" },
-  { id: "character_13", x: 877, y: 471, size: 90, line: "..............." },
-  { id: "character_14", x: 220, y: 300, size: 75, line: "?!?!??!11?!?!?!1?!?!" },
-  { id: "character_15", x: 1670, y: 1155, size: 80, line: ".................." },
+  { id: "character_1", x: 1125, y: 1663, size: 90, line: "Max: possiamo ufficialmente dare il via ad una nuova era di biglietti stupidi. Sia benedetta l'IA <e i `forti` programmatori di buon cuore>. Auguri vecchio ❤️" },
+  { id: "character_2", x: 1155, y: 1713, size: 90, line: "Silvia: tutti quanti voglion fare il jazz! Buon compleanno a chi ha la musica nel sangue!" },
+  { id: "character_3", x: 470, y: 1674, size: 90, line: "Marco: auguri Ari =) oh.... dopo tutti su quella roccia al centro per tre draghi al buio eh!", activeImage: "character_3_b.png" },
+  { id: "character_4", x: 510, y: 1639, size: 90, line: "Giulia: auguri vecchio Volpone! Questa idea delle terme è una vera Lucignolata, ti sei guadagnato il panino più buono del mondo!" },
+  { id: "character_5", x: 769, y: 1764, size: 90, line: "Dani: quando serve una pala sai chi chiamare" },
+  { id: "character_6", x: 774, y: 1684, size: 75, line: "Cris: un caldo abbraccio di buon compleanno... Dopotutto un abbraccio non ha mai ucciso nessuno!!!" },
+  { id: "character_7", x: 1308, y: 1143, size: 90, line: "Miri: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuguir!" },
+  { id: "character_8", x: 1362, y: 1105, size: 90, line: "Fede: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuguir!" },
+  { id: "character_9", x: 396, y: 251, size: 90, line: "Joy: dalla tua unica e inimitabile Lilo, tanti auguriiii!" },
+  { id: "character_10", x: 866, y: 668, size: 90, line: "Alessandro: alla fine del mondo!" },
+  { id: "character_11", x: 949, y: 656, size: 90, line: "Francesca: auguri Ari!" },
+  { id: "character_12", x: 952, y: 489, size: 90, line: "Francesco: in una taverna di Neverwinter un nano di nome Gundren Scrutaroccia... Brinda al tuo compleanno!" },
+  { id: "character_13", x: 877, y: 471, size: 90, line: "Francesca: auguri Ari!" },
+  { id: "character_14", x: 220, y: 300, size: 75, line: "Arianna: ricordati chi sei Aristide, tu sei...un master di DND!" },
+  { id: "character_15", x: 1670, y: 1155, size: 80, line: "Giova: non è più come quando bastava uno sguardo per saltare la scuola e sentirci padroni del mondo. La vita è cambiata, ma non ha smesso di sorprenderci. Ti auguro di custodire sempre la tua creatività e quella scintilla che sa stupire tutti" },
   { id: "character_x", x: 250, y: 850, size: 60, line: "`bush({<nullByte>} Auguri<Ari>!)`", sound: "character_x_sfx.mp3", delay: 1.7 }
 ];
 
