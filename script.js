@@ -60,8 +60,8 @@ let musicGain = null;
 let musicNode = null;
 
 function pickInitialMusicIndex() {
-  const canM4A = !!bgMusic.canPlayType("audio/mp4; codecs=mp4a.40.2");
-  return canM4A ? 0 : 1;
+  const canMp3 = !!bgMusic.canPlayType("audio/mpeg");
+  return canMp3 ? 1 : 0;
 }
 
 function setMusicSrcByIndex(i) {
